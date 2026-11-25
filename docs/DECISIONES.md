@@ -32,6 +32,10 @@ Referencias consultadas:
 
 ## Ollama y modelo
 
+**Actualización 0.2:** el arranque automático usa LFM3 1.7B Q4, ajusta contexto y
+concurrencia, y añade OpenCode 2 Mini. Consulta [ENTORNO.md](ENTORNO.md) y el registro
+de validación. Lo que sigue describe Qwen como recorrido manual de respaldo.
+
 Se propone `qwen3:4b-instruct`, cuantizado, cuya descarga publicada ronda 2,5 GB.
 `qwen3:1.7b` es una alternativa más pequeña con posibles diferencias de calidad.
 Estos tamaños no indican toda la RAM necesaria. El contexto se limita a 8192 tokens
@@ -40,8 +44,10 @@ El rendimiento depende del equipo, la aceleración disponible y otras aplicacion
 
 El agente usa `/api/chat`, esquemas de herramientas y `think: false`. El programa
 ejecuta las funciones y añade sus resultados como mensajes de herramienta.
-Hay un máximo de cuatro rondas de modelo y ocho llamadas a herramientas por turno.
-Si se alcanza el límite, el turno se interrumpe; las notas ya confirmadas permanecen.
+Hay un máximo de cuatro rondas con herramientas y ocho llamadas a herramientas por
+turno. Si agota las rondas, se permite una última respuesta sin herramientas con
+los resultados recuperados. Si tampoco responde, el turno termina con un error;
+las notas ya confirmadas permanecen.
 
 - [Modelo propuesto](https://ollama.com/library/qwen3:4b-instruct).
 - [Ciclo de herramientas en Ollama](https://github.com/ollama/ollama/blob/main/docs/capabilities/tool-calling.mdx).

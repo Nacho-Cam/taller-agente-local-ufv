@@ -6,3 +6,6 @@ dist/
 boveda/memoria/*.md
 boveda/.obsidian/
 *.log
+.tools/
+.local/
+opencode.json

@@ -4,10 +4,43 @@ Taller de una hora para Ingeniería de la Industria Conectada.
 Construye un asistente que consulta apuntes, guarda memoria entre sesiones y usa
 una función de Python para calcular el OEE de una línea ficticia.
 
-**Ollama + Python + archivos Markdown.** Sin paquetes Python externos, claves API,
-Docker ni base de datos. Obsidian es opcional. La práctica no se conecta a Canvas.
+**Ollama + Python + archivos Markdown**, con OpenCode 2 Mini como interfaz de uso.
+Sin claves API ni Docker. Obsidian es opcional. La práctica no se conecta a Canvas.
 
-## Antes de venir
+## Arranque automático recomendado
+
+Descarga el [ZIP de la versión actual](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
+y extráelo completo.
+
+- **Windows:** abre `iniciar.cmd`.
+- **macOS/Linux:** abre una terminal en la carpeta y ejecuta `bash iniciar.sh`.
+
+La primera ejecución prepara Python, instala Ollama y OpenCode en el proyecto si
+hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
+Después abre el tutor en OpenCode. Hazlo antes de clase: necesita internet,
+varios GB de descargas y al menos 7 GB libres para preparar el entorno.
+
+Los límites se guardan en `.local/ajustes.json`. La propuesta va de uno a tres agentes;
+se valida con una prueba breve y se reduce si falla. NVIDIA y Apple Silicon tienen
+perfiles; GPU desconocida o memoria escasa reciben un perfil CPU conservador.
+No se instalan drivers ni se modifica el Ollama habitual del usuario.
+
+En Windows puedes lanzar también:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\preparar.ps1 -Accion terminal
+powershell -NoProfile -ExecutionPolicy Bypass -File .\preparar.ps1 -Accion equipo
+```
+
+`terminal` abre nuestro agente Python para el taller. `equipo` ejecuta tres tareas
+independientes con el límite configurado. [Detalles, perfiles y recuperación](docs/ENTORNO.md).
+El arranque gestiona `psutil` y, en Linux, `zstandard`; el agente mínimo usa la biblioteca estándar.
+
+## Instalación manual alternativa
+
+Si prefieres preparar tú los programas, este recorrido conserva el modelo Qwen
+de la primera versión. Si ya has ejecutado el arranque automático, los programas
+Python toman por defecto su modelo, dirección y límites de `.local/ajustes.json`.
 
 1. Instala [Python](https://www.python.org/downloads/) 3.9 o superior (recomendado 3.11+).
    En Windows, activa la opción de añadir Python al PATH, si aparece.
@@ -36,15 +69,15 @@ cd taller-agente-local-ufv
 Abre una terminal dentro de la carpeta extraída o clonada. En Windows:
 
 ```powershell
-py solucion/agente.py --doctor
-py solucion/agente.py
+py solucion/agente.py --doctor --modelo qwen3:4b-instruct
+py solucion/agente.py --modelo qwen3:4b-instruct
 ```
 
 En macOS y Linux:
 
 ```sh
-python3 solucion/agente.py --doctor
-python3 solucion/agente.py
+python3 solucion/agente.py --doctor --modelo qwen3:4b-instruct
+python3 solucion/agente.py --modelo qwen3:4b-instruct
 ```
 
 El diagnóstico verifica conexión, modelo y soporte declarado de herramientas;
@@ -70,6 +103,8 @@ Las dos versiones usan `nucleo.py` y la misma `boveda/`. No copies solamente
 - [Mensaje previo para los alumnos](docs/PREPARACION.md)
 - [Opciones de memoria, PDF y Canvas](docs/DECISIONES.md)
 - [Registro de validación](docs/VALIDACION.md)
+- [Comparación de rendimiento con DSpark](docs/BENCHMARK_DSPARK.md)
+- [Entorno automático, OpenCode y concurrencia](docs/ENTORNO.md)
 
 ## Memoria que puedes abrir
 

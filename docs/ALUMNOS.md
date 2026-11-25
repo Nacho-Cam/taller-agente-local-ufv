@@ -4,6 +4,12 @@ Meta: explicar y ejecutar el ciclo **pregunta → modelo → herramienta → res
 Al terminar, debes poder distinguir la respuesta del modelo de un resultado calculado
 y comprobar qué queda guardado cuando cierras el programa.
 
+Antes de clase, completa el [arranque automático](ENTORNO.md). OpenCode sirve como
+interfaz de tutor; durante esta práctica abrirás el agente Python para ver y cambiar
+su bucle. Si Python no está en tu PATH, sustituye `py` en los comandos de esta guía
+por `.tools\uv\uv.exe run --python 3.11`. En macOS/Linux usa
+`.tools/uv/uv run --python 3.11`.
+
 ## 0–5 min · Comprueba el equipo
 
 Desde la raíz del repositorio:
@@ -90,6 +96,8 @@ Cada integrante debe poder explicar qué hace el modelo y qué hace Python.
 
 Retos para continuar:
 
+- Ejecuta `solucion/equipo.py` para ver tres tareas independientes con el límite
+  detectado. Compara con `--secuencial`: ¿mejora el tiempo total?
 - Modifica las instrucciones para pedirte primero un intento de solución.
 - Implementa una conversión de 4–20 mA a presión para el sensor ficticio de los apuntes.
   Añade su esquema a `HERRAMIENTAS` y su ejecución a `ejecutar_herramienta`.

@@ -8,7 +8,9 @@ CARPETAS = ("solucion", "plantilla", "docs", "tests", "herramientas", "boveda/ap
 
 
 def empaquetar():
-    archivos = [RAIZ / nombre for nombre in ("README.md", ".gitignore", "nucleo.py", "boveda/Inicio.md", "boveda/memoria/.gitkeep")]
+    nombres = ("README.md", ".gitignore", ".gitattributes", "nucleo.py", "entorno_local.py", "pyproject.toml", "uv.lock",
+               "preparar.ps1", "iniciar.cmd", "iniciar.sh", "boveda/Inicio.md", "boveda/memoria/.gitkeep")
+    archivos = [RAIZ / nombre for nombre in nombres if (RAIZ / nombre).is_file()]
     for carpeta in CARPETAS:
         archivos.extend(a for a in (RAIZ / carpeta).rglob("*")
                         if a.is_file() and a.suffix in (".py", ".md") and "__pycache__" not in a.parts)

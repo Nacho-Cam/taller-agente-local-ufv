@@ -34,10 +34,10 @@ class PruebasTaller(unittest.TestCase):
         guardado = nucleo.guardar_memoria("Objetivo", "Repasar OEE", self.boveda, confirmar=lambda _: "s")
         self.assertTrue(guardado["guardado"])
         mensajes = nucleo.nuevos_mensajes(self.boveda)
-        self.assertIn("Repasar OEE", mensajes[1]["content"])
+        self.assertIn("Repasar OEE", mensajes[0]["content"])
         archivo = self.boveda / guardado["archivo"]
         archivo.write_text("# Nuevo objetivo\nRepasar sensores", encoding="utf-8")
-        self.assertIn("Repasar sensores", nucleo.nuevos_mensajes(self.boveda)[1]["content"])
+        self.assertIn("Repasar sensores", nucleo.nuevos_mensajes(self.boveda)[0]["content"])
         self.assertTrue(nucleo.buscar_apuntes("sensores", self.boveda)["resultados"])
 
     def test_oee_unidades_y_datos_inconsistentes(self):
@@ -84,7 +84,16 @@ class PruebasTaller(unittest.TestCase):
         with patch.object(agente, "chat", return_value=repetida) as llamada:
             with self.assertRaisesRegex(RuntimeError, "agotó"):
                 agente.resolver_turno([], "simulado", self.boveda)
-        self.assertEqual(llamada.call_count, nucleo.MAX_RONDAS)
+        self.assertEqual(llamada.call_count, nucleo.MAX_RONDAS + 1)
+
+    def test_al_agotar_busquedas_pide_respuesta_final_sin_herramientas(self):
+        repetida = {"role": "assistant", "tool_calls": [{"function": {
+            "name": "buscar_apuntes", "arguments": {"consulta": "Faro"}}}]}
+        respuestas = [repetida] * nucleo.MAX_RONDAS + [{'role': 'assistant', 'content': 'Faro mide cada 7 segundos.'}]
+        with patch.object(agente, 'chat', side_effect=respuestas) as llamada:
+            respuesta = agente.resolver_turno([], 'simulado', self.boveda)
+        self.assertIn('7 segundos', respuesta)
+        self.assertEqual(llamada.call_args.args[2], [])
 
 
 if __name__ == "__main__":

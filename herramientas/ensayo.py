@@ -50,6 +50,10 @@ def ensayar():
                         "herramientas": herramientas, "herramientas_esperadas_presentes": all(h in herramientas for h in esperadas),
                         "respuesta": respuesta, "traza": captura.getvalue(),
                         "resultados_herramientas": [json.loads(m["content"]) for m in mensajes if m["role"] == "tool"]}
+                if nombre == 'recuperacion':
+                    caso['objetivo_recuperado'] = 'oee' in respuesta.lower() and 'fabricacion' in nucleo.palabras(respuesta)
+                if nombre == 'oee':
+                    caso['calculo_correcto'] = any(r.get('oee_pct') == 67.8571 for r in caso['resultados_herramientas'])
             except Exception as error:
                 caso = {"nombre": nombre, "segundos": round(time.monotonic() - inicio, 2), "error": str(error), "traza": captura.getvalue()}
             informe["casos"].append(caso)
@@ -57,7 +61,8 @@ def ensayar():
             destino.parent.mkdir(exist_ok=True)
             destino.write_text(json.dumps(informe, ensure_ascii=False, indent=2), encoding="utf-8")
             print(json.dumps(caso, ensure_ascii=False), flush=True)
-    return 1 if any("error" in c or not c.get("herramientas_esperadas_presentes", False) for c in informe["casos"]) else 0
+    return 1 if any("error" in c or not c.get("herramientas_esperadas_presentes", False)
+                   or c.get('objetivo_recuperado') is False or c.get('calculo_correcto') is False for c in informe["casos"]) else 0
 
 
 if __name__ == "__main__":

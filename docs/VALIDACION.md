@@ -1,5 +1,45 @@
 # Validación · 24 de noviembre de 2026
 
+## Versión 0.2: entorno automático y LFM3
+
+Windows, Python gestionado 3.11.18, 32 GB RAM, RTX 2060 de 6 GB y driver 591.74.
+Ollama portable 0.40.18, OpenCode 2.4.1 y `lfm3:1.7b-q4_K_M`, con contexto 16K,
+700 tokens máximos de salida y razonamiento desactivado.
+
+- **19 pruebas automáticas correctas**: incluyen perfiles simulados de hardware,
+  límites compartidos de concurrencia, reducción tras fallos de calibración,
+  protección de rutas al extraer y cierre del bucle con una respuesta sin herramientas.
+- Calibración caliente: una petición 0,73 s; lote de dos 0,95 s. Se verificó uso
+  de GPU mediante Ollama. El perfil quedó limitado a dos inferencias simultáneas.
+- Lectura real desde OpenCode: llamó a `read` y recuperó el topic correcto en 9,23 s.
+  No equivale a validar todos los flujos de edición o memoria de OpenCode.
+- Tres conversaciones Python independientes completadas con dos trabajadores:
+  MQTT, sensores y OEE; lote total 31,98 s.
+- Ensayo final Python: cinco casos completados con herramientas reales y bóveda temporal.
+
+| Caso LFM3 | Tiempo caliente | Comprobación |
+|---|---:|---|
+| MQTT | 5,02 s | Topic correcto y cita de archivo/líneas. |
+| Guardar memoria | 8,38 s | Nota ficticia guardada tras confirmación del ensayo. |
+| Recuperar tras reiniciar conversación | 4,64 s | Recuperó OEE y fabricación desde la nota. |
+| OEE | 13,92 s | Dos búsquedas y cálculo determinista: 67,8571 %. |
+| Dato ausente | 5,59 s | Reconoció que falta el intervalo de calibración. |
+
+La primera carga fría observada necesitó 155 s; se excluye de los tiempos calientes.
+Descargas e inicialización deben hacerse antes de la clase. LFM3 puede repetir una
+búsqueda, omitir una cita o redactar una nota más larga de lo pedido. El programa
+limita rondas y devuelve los cálculos a una función Python para evitar delegar la aritmética.
+
+El perfil de 5060 Laptop y los de Apple Silicon se comprobaron con datos simulados,
+sin esos equipos físicos. macOS/Linux solo tienen revisión del código y sintaxis del
+lanzador Bash; requieren ensayo en un equipo real antes de prometer compatibilidad.
+
+La comparación opcional con DSpark se ejecutó los días 24 y 25 de noviembre,
+usando un motor separado de Ollama. El [protocolo y sus limitaciones](BENCHMARK_DSPARK.md)
+distinguen la exploración inicial de las mediciones con calentamiento completo.
+
+## Versión 0.1: referencia histórica con Qwen
+
 ## Pruebas del programa
 
 Python 3.9.6, Windows, sin paquetes externos: **8 pruebas correctas**.

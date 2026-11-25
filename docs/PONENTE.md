@@ -35,9 +35,9 @@ No rellenar empresa, responsabilidades ni logros sin tus datos.
 
 ## Antes del jueves
 
-- Enviar `PREPARACION.md` a Álvaro para que los alumnos descarguen Python, Ollama
-  y el modelo antes de clase. Confirmar curso, número de alumnos y horario del taller.
-- Ejecutar `--doctor` y las tres pruebas del ensayo en TU portátil, con los mismos
+- Enviar `PREPARACION.md` a Álvaro para que los alumnos ejecuten el arranque automático
+  antes de clase. Prepara Python, Ollama, LFM3 y OpenCode. Confirmar curso, número de alumnos y horario del taller.
+- Ejecutar `--doctor` y los cinco casos del ensayo en TU portátil, con los mismos
   archivos que recibirán los alumnos. Cronometrar la primera respuesta y una en caliente.
 - Preguntar por proyector/adaptador, enchufes y wifi. Llevar cargador.
 - Llevar el ZIP en el portátil y en un USB. El ZIP no contiene Python, Ollama ni el modelo.
@@ -91,8 +91,8 @@ de mi trabajo actual, y me gustaría reservar aproximadamente una hora para una
 actividad práctica: construir un pequeño asistente local que consulte apuntes
 y guarde notas para futuras sesiones.
 
-Que traigan portátil y cargador. Te paso las instrucciones para instalar Python,
-Ollama y descargar el modelo antes de venir; Obsidian será opcional.
+Que traigan portátil y cargador. Te paso un arranque que prepara Python, Ollama,
+el modelo y OpenCode antes de venir; Obsidian será opcional.
 Llevaré una plantilla y una versión completa en GitHub para que puedan seguir
 y continuar después. Podemos trabajar por parejas si algún equipo da problemas.
 
