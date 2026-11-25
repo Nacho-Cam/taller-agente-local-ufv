@@ -13,16 +13,18 @@ Sin claves API ni Docker. Obsidian se incluye para ver y editar las notas. La pr
 
 ## Arranque automático recomendado
 
-En Windows, descarga **Instalar-Taller-UFV.exe** de [la versión actual](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
-y ejecútalo. Descarga el ZIP de esa versión, verifica su hash y prepara el entorno
-en tu usuario. La consola muestra el progreso. No necesitas instalar Python antes.
+Descarga el instalador de tu sistema de [la versión actual](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest):
+**EXE para Windows**, **aplicación para macOS** (Apple Silicon o Intel) o **ejecutable para Linux x64**.
+La ventana permite elegir OpenCode Desktop, Obsidian, CLI y calibración, cambiar la carpeta
+y seguir el progreso. Guarda la elección y deja un acceso **Taller UFV** en tu usuario.
+No necesitas instalar Python antes. [Instalación, carpetas y actualizaciones](docs/INSTALACION.md).
 
 También puedes descargar el ZIP y extraerlo completo:
 
 - **Windows:** abre `iniciar.cmd`.
 - **macOS/Linux:** abre una terminal en la carpeta y ejecuta `bash iniciar.sh`.
 
-La primera ejecución prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
+La primera ejecución desde el ZIP prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
 hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
 Pregunta si quieres **instalar y usar la aplicación de escritorio de OpenCode** o
 **usar solo la terminal**. Guarda esa elección en `.local/interfaz.json`.
@@ -54,7 +56,7 @@ El arranque gestiona `psutil` y, en Linux, `zstandard`; el agente mínimo usa la
 Para omitir Obsidian en un equipo sin escritorio, usa `-SinObsidian` en PowerShell
 o `--sin-obsidian` en el lanzador Bash. [Detalles del EXE](docs/INSTALADOR_WINDOWS.md).
 
-Para cambiar de interfaz, vuelve a ejecutar el EXE con `--ui elegir`, o usa
+Para cambiar de interfaz desde el ZIP, vuelve a ejecutar el lanzador con `--ui elegir`, o usa
 `--ui si` para Desktop y `--ui no` para la terminal. Desde el repositorio:
 
 ```powershell

@@ -4,7 +4,8 @@ param(
     [switch]$SinOpenCode,
     [switch]$SinCalibrar,
     [switch]$SinObsidian,
-    [ValidateSet('auto','si','no','elegir')][string]$UI = 'auto'
+    [ValidateSet('auto','si','no','elegir')][string]$UI = 'auto',
+    [string]$Componentes
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
@@ -34,6 +35,7 @@ try {
     if ($SinCalibrar) { $taskArguments += '--sin-calibrar' }
     if ($SinObsidian) { $taskArguments += '--sin-obsidian' }
     $taskArguments += @('--ui', $UI)
+    if ($Componentes) { $taskArguments += @('--componentes', $Componentes) }
     & $taskUv @taskArguments
     if ($LASTEXITCODE -ne 0) { throw "La preparación terminó con código $LASTEXITCODE. Revisa el mensaje anterior." }
 } finally {

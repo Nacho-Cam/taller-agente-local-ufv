@@ -1,6 +1,6 @@
 """Genera un ZIP reproducible en contenido, sin notas personales ni cachés."""
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 RAIZ = Path(__file__).resolve().parents[1]
 DESTINO = RAIZ / "dist" / "taller-agente-local-ufv.zip"
@@ -17,7 +17,11 @@ def empaquetar():
     DESTINO.parent.mkdir(exist_ok=True)
     with ZipFile(DESTINO, "w", ZIP_DEFLATED) as paquete:
         for archivo in sorted(set(archivos)):
-            paquete.write(archivo, "taller-agente-local-ufv/" + archivo.relative_to(RAIZ).as_posix())
+            entrada = ZipInfo("taller-agente-local-ufv/" + archivo.relative_to(RAIZ).as_posix(), (2026, 1, 1, 0, 0, 0))
+            entrada.compress_type = ZIP_DEFLATED
+            entrada.create_system = 3
+            entrada.external_attr = 0o100644 << 16
+            paquete.writestr(entrada, archivo.read_bytes().replace(b'\r\n', b'\n'))
     print(DESTINO)
 
 

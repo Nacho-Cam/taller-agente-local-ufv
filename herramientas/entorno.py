@@ -35,6 +35,40 @@ OLLAMA_SHA256 = {
 }
 
 
+def resolver_componentes(args):
+    """Carga la elección del instalador; los indicadores CLI son ajustes de esta ejecución."""
+    archivo = LOCAL / 'componentes.json'
+    origen = Path(args.componentes).expanduser().resolve() if args.componentes else archivo
+    seleccion = None
+    if args.componentes or archivo.exists():
+        datos = json.loads(origen.read_text(encoding='utf-8-sig'))
+        claves = {'escritorio', 'obsidian', 'opencode', 'calibrar'}
+        if not isinstance(datos, dict) or set(datos) != claves or any(type(v) is not bool for v in datos.values()):
+            raise ValueError('Componentes no válidos: indica escritorio, obsidian, opencode y calibrar como booleanos.')
+        if datos['escritorio'] and not datos['opencode']:
+            raise ValueError('OpenCode Desktop necesita también OpenCode CLI.')
+        seleccion = dict(datos)
+        if args.componentes and not args.solo_detectar:
+            LOCAL.mkdir(parents=True, exist_ok=True)
+            temporal = archivo.with_suffix('.json.tmp')
+            temporal.write_text(json.dumps(datos, ensure_ascii=False, indent=2), encoding='utf-8')
+            temporal.replace(archivo)
+    if seleccion is not None:
+        args.sin_obsidian = args.sin_obsidian or not seleccion['obsidian']
+        args.sin_calibrar = args.sin_calibrar or not seleccion['calibrar']
+        args.sin_opencode = args.sin_opencode or (not seleccion['opencode'] and args.ui != 'si')
+    if args.sin_opencode:
+        return False
+    if args.accion not in ('preparar', 'iniciar') or args.solo_detectar:
+        return False
+    if args.ui == 'auto' and seleccion is not None:
+        return seleccion['escritorio']
+    if args.accion in ('preparar', 'iniciar') and not args.solo_detectar:
+        from herramientas.opencode_desktop import elegir
+        return elegir(args.ui)
+    return False
+
+
 def json_web(url):
     with urlopen(Request(url, headers={'User-Agent': 'UFV-taller/0.2'}), timeout=40) as respuesta:
         return json.load(respuesta)
@@ -499,26 +533,31 @@ def main():
     parser.add_argument('--sin-opencode', action='store_true')
     parser.add_argument('--sin-calibrar', action='store_true')
     parser.add_argument('--sin-obsidian', action='store_true')
+    parser.add_argument('--componentes', metavar='ARCHIVO', help='JSON con la selección de componentes del instalador gráfico.')
     parser.add_argument('--ui', choices=['auto', 'si', 'no', 'elegir'], default='auto', help='Instalar/usar OpenCode Desktop o solo terminal.')
     args = parser.parse_args()
     if args.sin_opencode and args.ui == 'si':
         parser.error('--sin-opencode no se puede combinar con --ui si.')
     try:
-        ui = False
-        if args.accion in ('preparar', 'iniciar') and not args.solo_detectar and not args.sin_opencode:
-            from herramientas.opencode_desktop import elegir
-            ui = elegir(args.ui)
+        ui = resolver_componentes(args)
         if args.accion == 'notas' and not args.solo_detectar:
+            if args.sin_obsidian:
+                raise ValueError('Obsidian está desactivado. Actívalo en la configuración de componentes para abrir las notas.')
             from herramientas.obsidian_local import instalar, abrir
             hardware = entorno.detectar()
             abrir(instalar(hardware), hardware['sistema'])
             return 0
-        if args.accion == 'preparar' or not entorno.AJUSTES.exists() or args.solo_detectar:
+        if args.accion == 'preparar' or not entorno.AJUSTES.exists() or args.solo_detectar or (args.componentes and args.accion == 'iniciar'):
             config = preparar(args)
             if args.solo_detectar:
                 return 0
         else:
             config = entorno.cargar()
+            if not args.sin_opencode and not config.get('opencode_bin') and (ui or (LOCAL / 'componentes.json').exists()):
+                config = preparar(args)
+            if args.sin_opencode:
+                config.pop('opencode_bin', None)
+                config.pop('opencode_desktop_bin', None)
             servidor(config)
             configurar_opencode(config)
             entorno.guardar(config)

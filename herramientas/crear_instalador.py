@@ -1,12 +1,14 @@
-"""Construye el EXE Windows fijando el hash del ZIP que se publicará en GitHub."""
+"""Construye un instalador gráfico nativo con el hash del ZIP canónico."""
 import hashlib
 import json
 import subprocess
 import sys
+import platform
+import tarfile
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-VERSION = '0.6.0'
+VERSION = '0.7.0'
 
 
 if __name__ == '__main__':
@@ -16,7 +18,22 @@ if __name__ == '__main__':
     recurso.write_text(json.dumps({'version': VERSION,
         'url': f'https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/download/v{VERSION}/{archivo.name}',
         'sha256': hashlib.sha256(archivo.read_bytes()).hexdigest()}, indent=2), encoding='utf-8')
-    subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile', '--console',
+    sistema = platform.system()
+    argumentos = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile', '--windowed',
         '--name', 'Instalar-Taller-UFV', '--distpath', str(RAIZ / 'dist'),
         '--workpath', str(RAIZ / '.local/pyinstaller'), '--specpath', str(RAIZ / '.local'),
-        '--add-data', str(recurso) + ';.', str(RAIZ / 'herramientas/instalador_windows.py')], check=True)
+        '--paths', str(RAIZ / 'herramientas'), '--add-data', str(recurso) + (';.' if sistema == 'Windows' else ':.'),
+        str(RAIZ / 'herramientas/instalador_ui.py')]
+    if sistema == 'Darwin':
+        argumentos[argumentos.index('--onefile')] = '--onedir'
+        argumentos.extend(['--osx-bundle-identifier', 'es.ufv.taller.agente'])
+    subprocess.run(argumentos, check=True)
+    arch = platform.machine().lower()
+    if sistema == 'Darwin':
+        app = RAIZ / 'dist/Instalar-Taller-UFV.app'
+        salida = RAIZ / f'dist/Instalar-Taller-UFV-macOS-{arch}.zip'
+        # ditto conserva permisos, symlinks y estructura de un bundle macOS.
+        subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(salida)], check=True)
+    elif sistema == 'Linux':
+        with tarfile.open(RAIZ / f'dist/Instalar-Taller-UFV-Linux-{arch}.tar.gz', 'w:gz') as paquete:
+            paquete.add(RAIZ / 'dist/Instalar-Taller-UFV', arcname='Instalar-Taller-UFV')

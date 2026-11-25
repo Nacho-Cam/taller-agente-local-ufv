@@ -98,5 +98,5 @@ def abrir(binario, sistema, espacio):
     # Enlace soportado por Desktop 2: abre el proyecto con su configuración local.
     uri = 'opencode://open-project?directory=' + quote(str(Path(espacio).resolve()), safe='')
     comando = ['open', '-a', binario, uri] if sistema == 'Darwin' else [binario, uri]
-    opciones = {'creationflags': subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP} if sistema == 'Windows' else {'start_new_session': True}
+    opciones = {'creationflags': getattr(subprocess, 'DETACHED_PROCESS', 0x8) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0x200)} if sistema == 'Windows' else {'start_new_session': True}
     subprocess.Popen(comando, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **opciones)

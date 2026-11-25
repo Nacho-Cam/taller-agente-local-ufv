@@ -1,0 +1,117 @@
+name: Instaladores y pruebas multiplataforma
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instaladores-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paquete:
+    name: ZIP canónico compartido
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Empaquetar el material una sola vez
+        run: python herramientas/empaquetar.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: material-canonico
+          path: dist/taller-agente-local-ufv.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  construir:
+    name: ${{ matrix.nombre }}
+    needs: paquete
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: Windows x64
+            runner: windows-2022
+            arquitectura: x64
+            artefacto: instalador-windows-x64
+          - nombre: macOS Apple Silicon
+            runner: macos-15
+            arquitectura: arm64
+            artefacto: instalador-macos-arm64
+          - nombre: macOS Intel
+            runner: macos-15-intel
+            arquitectura: x64
+            artefacto: instalador-macos-x64
+          - nombre: Linux x64
+            runner: ubuntu-22.04
+            arquitectura: x64
+            artefacto: instalador-linux-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: '1'
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.arquitectura }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.9'
+      - name: Bibliotecas para la interfaz Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb python3-tk libx11-6 libxext6 libxrender1
+      - name: Instalar dependencias fijadas usando Python del runner
+        run: uv sync --frozen --extra mcp --python "$(python -c 'import sys; print(sys.executable)')"
+      - name: Comprobar arquitectura y disponibilidad de Tk
+        run: uv run --frozen --extra mcp python -c "import platform, sys, tkinter; print(platform.platform(), platform.machine(), sys.version, 'Tk', tkinter.TkVersion)"
+      - name: Pruebas de herramientas, archivos y protocolo MCP
+        run: uv run --frozen --extra mcp python -m unittest discover -s tests -v
+      - name: Probar la interfaz sin instalar ni descargar componentes
+        run: |
+          if [ "${{ runner.os }}" = Linux ]; then
+            xvfb-run -a uv run --frozen --extra mcp python herramientas/instalador_ui.py --prueba-ui
+          else
+            uv run --frozen --extra mcp python herramientas/instalador_ui.py --prueba-ui
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: material-canonico
+          path: dist
+      - name: Construir instalador con el hash del ZIP canónico
+        run: uv run --frozen --extra mcp --with pyinstaller==6.22.3 python herramientas/crear_instalador.py
+      - name: Probar el instalador empaquetado sin acceso a servicios externos
+        run: |
+          if [ "${{ runner.os }}" = Windows ]; then
+            python -c "import os, subprocess; subprocess.run([os.path.abspath('dist/Instalar-Taller-UFV.exe'), '--prueba-ui'], check=True, timeout=90)"
+          elif [ "${{ runner.os }}" = macOS ]; then
+            APP=$(find dist -maxdepth 1 -name '*.app' -print -quit)
+            test -n "$APP"
+            BIN=$(find "$APP/Contents/MacOS" -maxdepth 1 -type f -perm -111 -print -quit)
+            test -n "$BIN"
+            "$BIN" --prueba-ui
+          else
+            xvfb-run -a dist/Instalar-Taller-UFV --prueba-ui
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artefacto }}
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
