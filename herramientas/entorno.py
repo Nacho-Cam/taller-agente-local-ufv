@@ -316,6 +316,7 @@ def configurar_opencode(config):
     ajustes = {
         '$schema': 'https://opencode.ai/config.json',
         'model': 'ollama/' + config['modelo'],
+        'default_agent': 'tutor',
         'policies': [{'action': 'provider.use', 'resource': '*', 'effect': 'deny'},
                      {'action': 'provider.use', 'resource': 'ollama', 'effect': 'allow'}],
         'providers': {'ollama': {'settings': {'baseURL': config['url'] + '/v1'},
@@ -430,8 +431,15 @@ def main():
     parser.add_argument('--sin-opencode', action='store_true')
     parser.add_argument('--sin-calibrar', action='store_true')
     parser.add_argument('--sin-obsidian', action='store_true')
+    parser.add_argument('--ui', choices=['auto', 'si', 'no', 'elegir'], default='auto', help='Instalar/usar OpenCode Desktop o solo terminal.')
     args = parser.parse_args()
+    if args.sin_opencode and args.ui == 'si':
+        parser.error('--sin-opencode no se puede combinar con --ui si.')
     try:
+        ui = False
+        if args.accion in ('preparar', 'iniciar') and not args.solo_detectar and not args.sin_opencode:
+            from herramientas.opencode_desktop import elegir
+            ui = elegir(args.ui)
         if args.accion == 'notas' and not args.solo_detectar:
             from herramientas.obsidian_local import instalar, abrir
             hardware = entorno.detectar()
@@ -439,13 +447,19 @@ def main():
             return 0
         if args.accion == 'preparar' or not entorno.AJUSTES.exists() or args.solo_detectar:
             config = preparar(args)
-            if args.solo_detectar or args.accion == 'preparar':
+            if args.solo_detectar:
                 return 0
         else:
             config = entorno.cargar()
             servidor(config)
             configurar_opencode(config)
             entorno.guardar(config)
+        if ui:
+            from herramientas.opencode_desktop import instalar
+            config['opencode_desktop_bin'] = instalar(config['hardware'])
+            entorno.guardar(config)
+        if args.accion == 'preparar':
+            return 0
         if args.accion == 'doctor':
             print(json.dumps({'configuracion': config, 'servidor': api(config, '/api/version'), 'cargados': api(config, '/api/ps')}, ensure_ascii=False, indent=2))
             return 0
@@ -459,6 +473,11 @@ def main():
                 print('Abriendo el agente Python del taller.')
                 return subprocess.call([sys.executable, str(RAIZ / 'solucion/agente.py')], cwd=RAIZ)
             espacio = configurar_opencode(config)
+            if ui:
+                from herramientas.opencode_desktop import abrir
+                abrir(config['opencode_desktop_bin'], config['hardware']['sistema'], espacio)
+                print('OpenCode Desktop abierto en el proyecto del taller. Modelo local y tutor configurados.')
+                return 0
             ambiente = dict(os.environ, OPENCODE_DB=str(LOCAL / 'opencode.db'))
             return subprocess.call([config['opencode_bin'], 'mini', '--standalone', '--agent', 'tutor'], cwd=espacio, env=ambiente)
         script = 'solucion/equipo.py' if args.accion == 'equipo' else 'solucion/agente.py'

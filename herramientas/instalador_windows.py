@@ -43,6 +43,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--destino', type=Path)
     parser.add_argument('--accion', choices=['iniciar', 'preparar', 'notas', 'doctor'], default='iniciar')
+    parser.add_argument('--ui', choices=['auto', 'si', 'no', 'elegir'], default='auto', help='Instalar/usar Desktop o solo terminal; auto recuerda la elección.')
     args = parser.parse_args()
     recurso = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent)) / 'instalador-build.json'
     meta = json.loads(recurso.read_text(encoding='utf-8'))
@@ -67,7 +68,7 @@ def main():
             # No propagar a Python/Ollama las DLL temporales del propio EXE.
             ctypes.windll.kernel32.SetDllDirectoryW(None)
         resultado = subprocess.call(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-File', str(proyecto / 'preparar.ps1'), '-Accion', args.accion], cwd=proyecto,
+            '-File', str(proyecto / 'preparar.ps1'), '-Accion', args.accion, '-UI', args.ui], cwd=proyecto,
             env=dict(os.environ, _PYI_RESET_ENVIRONMENT='1'))
         if resultado:
             raise RuntimeError(f'La preparación devolvió el código {resultado}. Revisa el mensaje anterior.')

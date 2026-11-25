@@ -10,6 +10,7 @@ Antes de venir:
 2. En macOS/Linux descargad el ZIP, extraedlo y ejecutad `bash iniciar.sh` en esa carpeta.
 3. Dejad que prepare Python, Obsidian, Ollama, el modelo LFM3 1.7B y OpenCode. Puede descargar
    varios GB; hacedlo en casa antes de clase, con al menos 7 GB libres.
+   Elegid si queréis la aplicación de escritorio de OpenCode o usar solo terminal.
 4. Obsidian se abre directamente en la nota `Inicio` de la bóveda del taller.
    No hace falta elegir carpeta ni configurar plugins.
 5. Cuando se abra el tutor, probad «Consulta los apuntes de MQTT y dime qué topic

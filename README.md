@@ -4,7 +4,7 @@ Taller de una hora para Ingeniería de la Industria Conectada.
 Construye un asistente que consulta apuntes, guarda memoria entre sesiones y usa
 una función de Python para calcular el OEE de una línea ficticia.
 
-**Ollama + Python + archivos Markdown**, con OpenCode 2 Mini como interfaz de uso.
+**Ollama + Python + archivos Markdown**, con OpenCode Desktop o terminal a elegir.
 Sin claves API ni Docker. Obsidian se incluye para ver y editar las notas. La práctica no se conecta a Canvas.
 
 ## Arranque automático recomendado
@@ -20,6 +20,8 @@ También puedes descargar el ZIP y extraerlo completo:
 
 La primera ejecución prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
 hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
+Pregunta si quieres **instalar y usar la aplicación de escritorio de OpenCode** o
+**usar solo la terminal**. Guarda esa elección en `.local/interfaz.json`.
 Después abre Obsidian directamente en `boveda/Inicio.md` y el tutor en OpenCode.
 La carpeta del taller queda registrada automáticamente como bóveda.
 Hazlo antes de clase: necesita internet,
@@ -43,6 +45,17 @@ independientes con el límite configurado. [Detalles, perfiles y recuperación](
 El arranque gestiona `psutil` y, en Linux, `zstandard`; el agente mínimo usa la biblioteca estándar.
 Para omitir Obsidian en un equipo sin escritorio, usa `-SinObsidian` en PowerShell
 o `--sin-obsidian` en el lanzador Bash. [Detalles del EXE](docs/INSTALADOR_WINDOWS.md).
+
+Para cambiar de interfaz, vuelve a ejecutar el EXE con `--ui elegir`, o usa
+`--ui si` para Desktop y `--ui no` para la terminal. Desde el repositorio:
+
+```powershell
+.\preparar.ps1 -Accion iniciar -UI elegir
+```
+
+En macOS/Linux: `bash iniciar.sh iniciar --ui elegir`. Sin entrada interactiva,
+el arranque usa terminal salvo que haya una elección guardada o se indique `--ui si`.
+Elegir terminal no desinstala una app que ya tengas. La CLI sigue disponible en ambas opciones.
 
 ## Instalación manual alternativa
 

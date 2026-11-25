@@ -54,6 +54,15 @@ segura el servidor iniciado por este proyecto.
 
 ## Qué se configura
 
+La primera preparación pregunta si instalar y usar **OpenCode Desktop** o usar
+**solo terminal**. Guarda la elección en `.local/interfaz.json`; con `--ui elegir`
+(`-UI elegir` en PowerShell) se puede cambiar después. `--ui si` instala y abre
+Desktop y `--ui no` conserva el recorrido de terminal sin instalar ni abrir la app.
+La CLI de OpenCode sigue siendo necesaria para validar el modelo en ambos casos.
+Desktop recibe un enlace al proyecto configurado con el agente `tutor`, el modelo
+LFM3 y el endpoint de Ollama del taller. No modifica la configuración global de proveedores.
+La instalación Desktop está validada en Windows; macOS/Linux requieren prueba física.
+
 Obsidian 1.15.1 se instala por defecto: instalación de usuario en Windows,
 `~/Applications` en macOS y distribución portable oficial en Linux. Una instalación
 existente se reutiliza. El arranque registra `boveda/` y abre `Inicio.md` automáticamente.

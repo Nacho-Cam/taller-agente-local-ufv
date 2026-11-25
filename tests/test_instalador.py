@@ -20,8 +20,9 @@ class InstaladorWindows(unittest.TestCase):
             (proyecto / 'preparar.ps1').write_text('contenido')
             (proyecto / '.ufv-paquete.json').write_text(json.dumps({'sha256': 'abc'}))
             (raiz / 'instalador-build.json').write_text(json.dumps({'version': 'prueba', 'sha256': 'abc', 'url': 'https://example.invalid'}))
-            with patch.object(instalador_windows.sys, '_MEIPASS', str(raiz), create=True), patch.object(instalador_windows.sys, 'argv', ['instalador', '--destino', str(raiz), '--accion', 'notas']), patch.object(instalador_windows, 'urlopen', side_effect=AssertionError('No debe descargar')), patch.object(instalador_windows.subprocess, 'call', return_value=0):
+            with patch.object(instalador_windows.sys, '_MEIPASS', str(raiz), create=True), patch.object(instalador_windows.sys, 'argv', ['instalador', '--destino', str(raiz), '--accion', 'notas', '--ui', 'si']), patch.object(instalador_windows, 'urlopen', side_effect=AssertionError('No debe descargar')), patch.object(instalador_windows.subprocess, 'call', return_value=0) as ejecutar:
                 self.assertEqual(instalador_windows.main(), 0)
+                self.assertEqual(ejecutar.call_args.args[0][-2:], ['-UI', 'si'])
 
     def paquete(self, raiz, nombres):
         archivo = raiz / 'paquete.zip'

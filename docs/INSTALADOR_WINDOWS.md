@@ -9,15 +9,34 @@ ejecuta para el usuario actual.
 ## Qué sucede al ejecutarlo
 
 1. Descarga el ZIP de la versión fijada, verifica SHA256 y lo extrae en
-   `%LOCALAPPDATA%\Programs\TallerUFV\0.4.1\taller-agente-local-ufv`.
+   `%LOCALAPPDATA%\Programs\TallerUFV\0.5.0\taller-agente-local-ufv`.
 2. Ejecuta `preparar.ps1`, el mismo arranque que contiene el repositorio.
-3. Prepara Python, instala Obsidian 1.15.1 en el usuario y prepara Ollama, OpenCode,
+3. Pregunta si quieres **OpenCode Desktop** o **solo terminal**. Prepara Python,
+   instala Obsidian 1.15.1 en el usuario y prepara Ollama, la CLI de OpenCode,
    LFM3 y el perfil de hardware. Reutiliza Obsidian si ya existe.
 4. Comprueba inferencia, herramientas y una lectura real de los apuntes desde OpenCode.
 5. Registra la bóveda del taller y abre Obsidian en `Inicio.md`, junto al tutor.
    No requiere elegir carpeta. Si Obsidian ya está abierto al registrar una bóveda
    nueva, se cierra normalmente y vuelve a abrirse. Se conservan las otras bóvedas
    y se guarda el registro original como `obsidian.json.ufv-backup`.
+
+Si eliges Desktop, instala OpenCode Desktop 2.4.1 mediante el instalador oficial
+para tu usuario, verificando SHA256, y abre el proyecto del taller con el tutor y
+modelo local ya seleccionados. Si eliges terminal, no descarga ni abre Desktop.
+La elección se recuerda en `.local/interfaz.json`. Una versión Desktop 2 en su
+ruta habitual se reutiliza. La antigua app 1.x usa otra ruta y otro formato de
+configuración; el taller prepara Desktop 2 junto a ella.
+
+Puedes cambiarlo al ejecutar de nuevo el mismo EXE:
+
+```powershell
+.\Instalar-Taller-UFV.exe --ui elegir
+.\Instalar-Taller-UFV.exe --ui si
+.\Instalar-Taller-UFV.exe --ui no
+```
+
+`--ui no` no desinstala una aplicación existente. En ejecuciones sin terminal
+interactiva se usa la elección guardada; si no hay ninguna, se usa solo terminal.
 
 La aplicación Obsidian de Windows se instala normalmente en
 `%LOCALAPPDATA%\Programs\Obsidian\Obsidian.exe`. La configuración del taller y las
