@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nucleo import HERRAMIENTAS, MAX_LLAMADAS, MAX_RONDAS, chat, ejecutar_herramienta, iniciar
 
 
-def resolver_turno(mensajes, modelo, boveda, herramientas=None, ejecutar=None):
+def resolver_turno(mensajes, modelo, boveda, herramientas=None, ejecutar=None, informar=print):
     herramientas = HERRAMIENTAS if herramientas is None else herramientas
     ejecutar = ejecutar_herramienta if ejecutar is None else ejecutar
     llamadas = 0
@@ -24,14 +24,14 @@ def resolver_turno(mensajes, modelo, boveda, herramientas=None, ejecutar=None):
             funcion = solicitud["function"]
             nombre = funcion["name"]
             argumentos = funcion.get("arguments", {})
-            print(f"  [herramienta] {nombre}: {json.dumps(argumentos, ensure_ascii=False)}")
+            informar(f"  [herramienta] {nombre}: {json.dumps(argumentos, ensure_ascii=False)}")
             try:
                 resultado = ejecutar(nombre, argumentos, boveda)
             except (ValueError, TypeError, OSError) as error:
                 resultado = {"error": str(error)}
             mensajes.append({"role": "tool", "tool_name": nombre,
                              "content": json.dumps(resultado, ensure_ascii=False)})
-    print('  [límite] Se solicita una respuesta final con la información ya recuperada.')
+    informar('  [límite] Se solicita una respuesta final con la información ya recuperada.')
     mensajes.append({'role': 'user', 'content': 'Responde ahora a mi petición con los resultados disponibles. No hagas más búsquedas ni cálculos. Si falta información, dilo.'})
     final = chat(mensajes, modelo, [])
     mensajes.append(final)

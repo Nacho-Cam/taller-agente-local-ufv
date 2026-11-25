@@ -9,3 +9,5 @@ boveda/.obsidian/
 .tools/
 .local/
 opencode.json
+/.mcp.json
+/.claude/agents/tutor-ufv.md

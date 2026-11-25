@@ -4,7 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 RAIZ = Path(__file__).resolve().parents[1]
 DESTINO = RAIZ / "dist" / "taller-agente-local-ufv.zip"
-CARPETAS = ("solucion", "plantilla", "docs", "tests", "herramientas", "boveda/apuntes")
+CARPETAS = ("solucion", "plantilla", "docs", "tests", "herramientas", "integraciones", "boveda/apuntes")
 
 
 def empaquetar():

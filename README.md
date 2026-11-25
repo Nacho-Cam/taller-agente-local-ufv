@@ -104,6 +104,7 @@ Las dos versiones usan `nucleo.py` y la misma `boveda/`. No copies solamente
 - [Opciones de memoria, PDF y Canvas](docs/DECISIONES.md)
 - [Registro de validación](docs/VALIDACION.md)
 - [Comparación de rendimiento con DSpark](docs/BENCHMARK_DSPARK.md)
+- [Conectar como MCP y subagente de Claude Code](docs/MCP_Y_CLAUDE.md)
 - [Entorno automático, OpenCode y concurrencia](docs/ENTORNO.md)
 
 ## Memoria que puedes abrir

@@ -1,5 +1,24 @@
 # Validación · 24 de noviembre de 2026
 
+## Versión 0.3: MCP y subagente de Claude Code
+
+Validación del 25 de noviembre en Windows, Python 3.11 y SDK MCP 2.3.0 opcional.
+
+- **23 pruebas correctas** con el extra MCP instalado. Sin él, se omiten las dos
+  pruebas de protocolo y delegación; el agente normal no necesita ese SDK.
+- Servidor stdio real lanzado por el cliente del SDK, tanto en modo moderno como
+  legacy: listado de herramientas, búsqueda MQTT, OEE 67,8571 % y rechazo de escritura.
+- Configuración generada probada mediante su comando uv real desde otra carpeta
+  con espacios. Se conservan servidores existentes y no se sobrescribe un tutor modificado.
+- Delegación probada con respuesta de modelo simulada: no admite guardar notas y
+  manda las trazas a stderr para mantener limpio el protocolo de stdout.
+
+No se ha probado una conversación autenticada dentro de Claude Code ni otros
+clientes gráficos. La inferencia completa del tutor se ensayó en la versión 0.2;
+no se repitió un ensayo con Ollama real a través del nuevo MCP.
+Las instrucciones y campos de configuración se contrastaron con la documentación
+oficial de Claude Code. Consulta [MCP_Y_CLAUDE.md](MCP_Y_CLAUDE.md).
+
 ## Versión 0.2: entorno automático y LFM3
 
 Windows, Python gestionado 3.11.18, 32 GB RAM, RTX 2060 de 6 GB y driver 591.74.
