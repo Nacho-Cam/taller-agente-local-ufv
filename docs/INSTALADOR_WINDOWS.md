@@ -9,7 +9,7 @@ ejecuta para el usuario actual.
 ## Qué sucede al ejecutarlo
 
 1. Descarga el ZIP de la versión fijada, verifica SHA256 y lo extrae en
-   `%LOCALAPPDATA%\Programs\TallerUFV\0.5.0\taller-agente-local-ufv`.
+   `%LOCALAPPDATA%\Programs\TallerUFV\0.5.1\taller-agente-local-ufv`.
 2. Ejecuta `preparar.ps1`, el mismo arranque que contiene el repositorio.
 3. Pregunta si quieres **OpenCode Desktop** o **solo terminal**. Prepara Python,
    instala Obsidian 1.15.1 en el usuario y prepara Ollama, la CLI de OpenCode,
@@ -26,6 +26,13 @@ modelo local ya seleccionados. Si eliges terminal, no descarga ni abre Desktop.
 La elección se recuerda en `.local/interfaz.json`. Una versión Desktop 2 en su
 ruta habitual se reutiliza. La antigua app 1.x usa otra ruta y otro formato de
 configuración; el taller prepara Desktop 2 junto a ella.
+
+El tutor conoce las rutas de apuntes, memoria, ejemplos y documentación. El arranque
+conecta y verifica las herramientas de búsqueda y OEE por MCP, sin configuración manual.
+El proyecto abierto es la raíz del taller: puedes ver `boveda/`, `docs/`, `solucion/`
+y `plantilla/` desde la app. El EXE deja un acceso **Taller UFV 0.5.1** en el menú
+Inicio y una copia del lanzador junto al taller instalado. Ese acceso inicia Ollama
+si hace falta y abre Obsidian y la interfaz elegida; puedes borrar el EXE descargado.
 
 Puedes cambiarlo al ejecutar de nuevo el mismo EXE:
 

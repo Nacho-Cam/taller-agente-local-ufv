@@ -24,4 +24,4 @@ if [ ! -x "$TASK_UV" ]; then
 fi
 cd "$TASK_ROOT"
 if [ "$#" -eq 0 ]; then set -- iniciar; fi
-exec "$TASK_UV" run --python 3.11 herramientas/entorno.py "$@"
+exec "$TASK_UV" run --python 3.11 --extra mcp herramientas/entorno.py "$@"

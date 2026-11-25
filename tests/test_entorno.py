@@ -20,6 +20,33 @@ def hardware(tipo='nvidia', vram=8192, libre=7600, ram=16, disponible=10):
 
 
 class Perfiles(unittest.TestCase):
+    def test_opencode_abre_materiales_y_mcp_preconfigurados_sin_cambiar_readme(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            (raiz / 'README.md').write_text('Mi documentación', encoding='utf-8')
+            config = entorno_local.perfil(hardware())
+            with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz / '.local'):
+                self.assertEqual(entorno.configurar_opencode(config), raiz)
+            datos = json.loads((raiz / 'opencode.json').read_text(encoding='utf-8'))
+            self.assertEqual(datos['default_agent'], 'tutor')
+            self.assertEqual(datos['model'], 'ollama/' + config['modelo'])
+            mcp = datos['mcp']['servers']['ufv-local']
+            self.assertFalse(mcp['codemode'])
+            self.assertEqual(mcp['command'][-1], str(raiz / 'boveda'))
+            for ruta in ('apuntes', 'memoria', 'docs'):
+                self.assertIn(ruta, datos['agents']['tutor']['system'])
+            self.assertEqual((raiz / 'README.md').read_text(encoding='utf-8'), 'Mi documentación')
+
+    def test_configuracion_previa_del_proyecto_tiene_copia(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            original = {'model': 'otra/configuracion', 'username': 'alumno'}
+            (raiz / 'opencode.json').write_text(json.dumps(original))
+            with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz / '.local'):
+                entorno.configurar_opencode(entorno_local.perfil(hardware()))
+            self.assertEqual(json.loads((raiz / '.local/opencode-original.json').read_text()), original)
+            self.assertEqual(json.loads((raiz / 'opencode.json').read_text())['username'], 'alumno')
+
     def test_5060_16gb_propone_tres_y_contexto_limitado(self):
         p = entorno_local.perfil(hardware())
         self.assertEqual(p['max_agentes'], 3)

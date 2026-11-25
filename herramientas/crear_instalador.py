@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 
 if __name__ == '__main__':

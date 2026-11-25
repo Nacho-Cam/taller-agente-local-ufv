@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import stat
 import subprocess
@@ -12,6 +13,25 @@ from urllib.request import urlopen
 import zipfile
 
 CARPETA = 'taller-agente-local-ufv'
+
+
+def crear_acceso(destino, version):
+    if not getattr(sys, 'frozen', False):
+        return
+    destino = Path(destino).resolve()
+    lanzador = destino / 'Abrir-Taller-UFV.exe'
+    if Path(sys.executable).resolve() != lanzador:
+        shutil.copy2(sys.executable, lanzador)
+    enlace = Path(os.environ['APPDATA']) / f'Microsoft/Windows/Start Menu/Programs/Taller UFV {version}.lnk'
+    ambiente = dict(os.environ, UFV_LANZADOR=str(lanzador), UFV_ENLACE=str(enlace),
+                    UFV_ARGUMENTOS=subprocess.list2cmdline(['--destino', str(destino)]))
+    subprocess.run(['powershell.exe', '-NoProfile', '-Command',
+        '$taskShell=New-Object -ComObject WScript.Shell; '
+        '$taskLink=$taskShell.CreateShortcut($env:UFV_ENLACE); '
+        '$taskLink.TargetPath=$env:UFV_LANZADOR; $taskLink.Arguments=$env:UFV_ARGUMENTOS; '
+        '$taskLink.Description="Iniciar el modelo, las notas y el tutor local UFV"; $taskLink.Save()'],
+        env=ambiente, check=True, timeout=20, creationflags=subprocess.CREATE_NO_WINDOW)
+    print(f'Acceso disponible en Inicio: Taller UFV {version}.', flush=True)
 
 
 def extraer_paquete(archivo, destino, esperado):
@@ -72,6 +92,7 @@ def main():
             env=dict(os.environ, _PYI_RESET_ENVIRONMENT='1'))
         if resultado:
             raise RuntimeError(f'La preparación devolvió el código {resultado}. Revisa el mensaje anterior.')
+        crear_acceso(destino, meta['version'])
         print(f'Listo. El taller queda en:\n{proyecto}', flush=True)
         return 0
     except (OSError, ValueError, RuntimeError, zipfile.BadZipFile) as error:

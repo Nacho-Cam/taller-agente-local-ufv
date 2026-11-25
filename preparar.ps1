@@ -28,7 +28,7 @@ if (-not (Test-Path -LiteralPath $taskUv)) {
 }
 Push-Location -LiteralPath $taskRoot
 try {
-    $taskArguments = @('run','--python','3.11','herramientas/entorno.py',$Accion)
+    $taskArguments = @('run','--python','3.11','--extra','mcp','herramientas/entorno.py',$Accion)
     if ($SoloDetectar) { $taskArguments += '--solo-detectar' }
     if ($SinOpenCode) { $taskArguments += '--sin-opencode' }
     if ($SinCalibrar) { $taskArguments += '--sin-calibrar' }

@@ -24,6 +24,10 @@ Pregunta si quieres **instalar y usar la aplicación de escritorio de OpenCode**
 **usar solo la terminal**. Guarda esa elección en `.local/interfaz.json`.
 Después abre Obsidian directamente en `boveda/Inicio.md` y el tutor en OpenCode.
 La carpeta del taller queda registrada automáticamente como bóveda.
+El tutor conoce las rutas de apuntes, memoria y documentación. El arranque conecta
+las herramientas MCP de búsqueda y cálculo de OEE, y comprueba que responden.
+Desktop abre la carpeta del taller con todos sus materiales visibles. El EXE deja
+un acceso **Taller UFV** en el menú Inicio para arrancar modelo, notas y tutor juntos.
 Hazlo antes de clase: necesita internet,
 varios GB de descargas y al menos 7 GB libres para preparar el entorno.
 

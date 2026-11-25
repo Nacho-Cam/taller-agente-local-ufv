@@ -34,8 +34,9 @@ En macOS/Linux:
 .tools/uv/uv run --python 3.11 --extra mcp python herramientas/conectar_claude.py
 ```
 
-Se instala el SDK oficial MCP 2.3.0 como dependencia opcional. La primera vez
-requiere internet. El comando genera:
+El arranque automático instala el SDK oficial MCP 2.3.0 y conecta el servidor a
+OpenCode. El extra `mcp` también permite instalarlo en una preparación manual.
+El comando de conexión a Claude genera:
 
 - `.mcp.json`: servidor `ufv-local`, con rutas absolutas para este portátil.
 - `.claude/agents/tutor-ufv.md`: instrucciones y herramientas del subagente.

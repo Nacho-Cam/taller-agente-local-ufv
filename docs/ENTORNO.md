@@ -121,8 +121,8 @@ no intenta cerrar el servicio de Ollama del usuario.
 
 ## OpenCode como tutor
 
-La acción `iniciar` abre **OpenCode 2 Mini**, una interfaz mínima de terminal.
-No hace falta instalar Node, npm, T3 ni una aplicación de escritorio.
+La acción `iniciar` abre **OpenCode Desktop** o **OpenCode 2 Mini** según tu elección.
+No hace falta instalar Node, npm ni T3.
 Se descarga el paquete binario oficial de OpenCode 2 (no el OpenCode 1 de algunas
 instrucciones antiguas). Se genera una configuración de tutor que usa solo el proveedor
 Ollama local, con acceso a la bóveda y solicitudes de confirmación para editar o ejecutar
@@ -130,8 +130,10 @@ comandos. Los buscadores web están deshabilitados en este recorrido.
 
 Prueba «Consulta los apuntes de MQTT y dime qué topic usa la maqueta; cita la fuente».
 Después «Recuerda en una nota que quiero repasar OEE» y revisa la escritura propuesta.
-Los apuntes son los mismos que usa el agente Python, pero las herramientas de OpenCode
-son las suyas: no se presentan como si fueran nuestras funciones Python.
+Los apuntes son los mismos que usa el agente Python. Además de sus herramientas
+nativas, OpenCode recibe las funciones del taller por MCP: buscar apuntes y memoria,
+calcular OEE en Python y delegar una pregunta al tutor local. El SDK se instala
+automáticamente. La preparación verifica búsqueda y cálculo por el transporte MCP.
 
 OpenCode recibe más instrucciones y herramientas que el ejemplo mínimo. Un modelo
 de 1,7B puede equivocarse al navegar o editar: la prueba de herramientas de Ollama no
@@ -139,7 +141,7 @@ demuestra por sí sola que todos los flujos de OpenCode funcionen bien.
 Conserva el recorrido `terminal` si la interfaz o el tutor dan problemas.
 
 Antes de seleccionar OpenCode como interfaz, la preparación le pide leer el archivo
-MQTT y comprueba tanto la llamada real a `read` como el topic obtenido. Si falla o
+MQTT y comprueba tanto la llamada real a lectura o búsqueda MCP como el topic obtenido. Si falla o
 supera 180 segundos, `iniciar` abre el agente Python. Los registros quedan en `.local/`.
 El razonamiento se desactiva en este recorrido para reducir la espera: `think: false`
 en la API nativa y `reasoning_effort: "none"` en OpenCode. Esto no impide encadenar
@@ -163,10 +165,11 @@ En macOS/Linux, usa `.tools/uv/uv` en lugar de `.tools\uv\uv.exe`.
 
 ## T3 como opción posterior
 
-T3 Code admite OpenCode como proveedor, incluido OpenCode 2. Si se quiere una
-interfaz de escritorio, se puede añadir después usando el mismo modelo y servidor.
-No se instala automáticamente porque añade otra aplicación y configuración a la hora
-de taller. La configuración de OpenCode de este proyecto vive en `.local/estudio/`.
+T3 Code admite OpenCode como proveedor, incluido OpenCode 2, y se puede configurar
+por separado. El taller ofrece directamente OpenCode Desktop como opción y no
+instala T3. La configuración del tutor vive en `opencode.json` en la raíz del taller,
+junto a los materiales visibles en la app. Si había una configuración del proyecto,
+guarda una copia en `.local/opencode-original.json`. No cambia la configuración global.
 
 Referencias verificadas al preparar el material:
 
