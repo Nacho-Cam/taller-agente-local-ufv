@@ -35,7 +35,7 @@ class Interfaz(unittest.TestCase):
         self.assertNotIn('shell', lanzar.call_args.kwargs)
 
     def test_solo_terminal_no_instala_desktop_y_si_respeta_config(self):
-        config = {'hardware': {'sistema': 'Windows'}, 'opencode_bin': 'cli.exe', 'interfaz': 'opencode', 'mcp_validado': True}
+        config = {'hardware': {'sistema': 'Windows'}, 'opencode_bin': 'cli.exe', 'interfaz': 'opencode', 'mcp_validado': True, 'mcp_revision': 2}
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)
             ajustes = raiz / 'ajustes.json'
@@ -45,7 +45,7 @@ class Interfaz(unittest.TestCase):
                 self.assertIn('mini', cli.call_args.args[0])
 
     def test_desktop_se_instala_y_abre_sin_arrancar_chat_terminal(self):
-        config = {'hardware': {'sistema': 'Windows'}, 'opencode_bin': 'cli.exe', 'interfaz': 'opencode', 'mcp_validado': True}
+        config = {'hardware': {'sistema': 'Windows'}, 'opencode_bin': 'cli.exe', 'interfaz': 'opencode', 'mcp_validado': True, 'mcp_revision': 2}
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)
             ajustes = raiz / 'ajustes.json'

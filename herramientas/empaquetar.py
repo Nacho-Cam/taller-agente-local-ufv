@@ -8,7 +8,7 @@ CARPETAS = ("solucion", "plantilla", "docs", "tests", "herramientas", "integraci
 
 
 def empaquetar():
-    nombres = ("README.md", ".gitignore", ".gitattributes", "nucleo.py", "entorno_local.py", "pyproject.toml", "uv.lock",
+    nombres = ("README.md", ".gitignore", ".gitattributes", "nucleo.py", "academia.py", "entorno_local.py", "pyproject.toml", "uv.lock",
                "preparar.ps1", "iniciar.cmd", "iniciar.sh", "boveda/Inicio.md", "boveda/memoria/.gitkeep")
     archivos = [RAIZ / nombre for nombre in nombres if (RAIZ / nombre).is_file()]
     for carpeta in CARPETAS:

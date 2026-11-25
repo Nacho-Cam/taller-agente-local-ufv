@@ -4,6 +4,10 @@ Taller de una hora para Ingeniería de la Industria Conectada.
 Construye un asistente que consulta apuntes, guarda memoria entre sesiones y usa
 una función de Python para calcular el OEE de una línea ficticia.
 
+El tutor también gestiona la carrera: crea cursos y asignaturas, organiza temas,
+apuntes, tareas y exámenes, importa PDFs con texto y muestra lo pendiente por fecha.
+Los cambios aparecen en Obsidian en `Carrera.md`. [Uso académico y herramientas](docs/CARRERA.md).
+
 **Ollama + Python + archivos Markdown**, con OpenCode Desktop o terminal a elegir.
 Sin claves API ni Docker. Obsidian se incluye para ver y editar las notas. La práctica no se conecta a Canvas.
 

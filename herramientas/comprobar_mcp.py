@@ -9,11 +9,17 @@ async def comprobar(raiz):
     from mcp.client.stdio import StdioServerParameters
     raiz = Path(raiz).resolve()
     parametros = StdioServerParameters(command=sys.executable,
-        args=[str(raiz / 'integraciones/servidor_mcp.py'), '--boveda', str(raiz / 'boveda')])
+        args=[str(raiz / 'integraciones/servidor_mcp.py'), '--boveda', str(raiz / 'boveda'), '--gestion-academica'])
     async with Client(parametros, read_timeout_seconds=20) as cliente:
         herramientas = {t.name for t in (await cliente.list_tools()).tools}
         if not {'buscar_apuntes', 'calcular_oee', 'consultar_tutor_local'} <= herramientas:
             raise RuntimeError('Faltan herramientas del taller en el servidor MCP.')
+        from academia import NOMBRES
+        if not set(NOMBRES) <= herramientas:
+            raise RuntimeError('Faltan herramientas de gestión de la carrera.')
+        carrera = await cliente.call_tool('listar_carrera', {})
+        if carrera.is_error:
+            raise RuntimeError('No se puede leer la organización de la carrera.')
         busqueda = await cliente.call_tool('buscar_apuntes', {'consulta': 'MQTT maqueta'})
         if busqueda.is_error or 'taller/linea-roble/temperatura' not in str(busqueda.content):
             raise RuntimeError('MCP no puede consultar los apuntes de ejemplo.')

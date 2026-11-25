@@ -18,6 +18,12 @@ un puerto ni exponer un servicio a la red.
 
 ## Conectar Claude Code
 
+El servidor estándar mantiene estas tres herramientas de consulta. El instalador
+de OpenCode habilita además la gestión académica con `--gestion-academica`:
+cursos, asignaturas, materiales y agenda. Para habilitarla en otros clientes,
+añade ese argumento al comando del servidor y permite las herramientas necesarias.
+[Catálogo y flujos de la carrera](CARRERA.md).
+
 Primero extrae y prepara el taller con `iniciar.cmd` o `bash iniciar.sh preparar`.
 Así quedan disponibles uv, Python y el modelo local. Cierra el chat del taller
 cuando quieras usar el mismo equipo desde Claude Code.

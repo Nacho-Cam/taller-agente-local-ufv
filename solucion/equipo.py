@@ -19,10 +19,10 @@ TAREAS = [
 
 def ejecutar_equipo(boveda, workers):
     from nucleo import ejecutar_herramienta
-    herramientas = [h for h in nucleo.HERRAMIENTAS if h['function']['name'] != 'guardar_memoria']
+    herramientas = [h for h in nucleo.HERRAMIENTAS_BASE if h['function']['name'] in ('buscar_apuntes', 'calcular_oee')]
 
     def solo_lectura(nombre, argumentos, raiz):
-        if nombre == 'guardar_memoria':
+        if nombre not in ('buscar_apuntes', 'calcular_oee'):
             return {'guardado': False, 'motivo': 'El equipo trabaja en modo lectura.'}
         return ejecutar_herramienta(nombre, argumentos, raiz)
 

@@ -24,6 +24,7 @@ class Perfiles(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)
             (raiz / 'README.md').write_text('Mi documentación', encoding='utf-8')
+            (raiz / 'boveda').mkdir()
             config = entorno_local.perfil(hardware())
             with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz / '.local'):
                 self.assertEqual(entorno.configurar_opencode(config), raiz)
@@ -32,7 +33,7 @@ class Perfiles(unittest.TestCase):
             self.assertEqual(datos['model'], 'ollama/' + config['modelo'])
             mcp = datos['mcp']['servers']['ufv-local']
             self.assertFalse(mcp['codemode'])
-            self.assertEqual(mcp['command'][-1], str(raiz / 'boveda'))
+            self.assertEqual(mcp['command'][-2:], [str(raiz / 'boveda'), '--gestion-academica'])
             for ruta in ('apuntes', 'memoria', 'docs'):
                 self.assertIn(ruta, datos['agents']['tutor']['system'])
             self.assertEqual((raiz / 'README.md').read_text(encoding='utf-8'), 'Mi documentación')
@@ -41,6 +42,7 @@ class Perfiles(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)
             original = {'model': 'otra/configuracion', 'username': 'alumno'}
+            (raiz / 'boveda').mkdir()
             (raiz / 'opencode.json').write_text(json.dumps(original))
             with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz / '.local'):
                 entorno.configurar_opencode(entorno_local.perfil(hardware()))

@@ -2,6 +2,7 @@
 import argparse
 import json
 import math
+import os
 import re
 import socket
 import sys
@@ -51,7 +52,8 @@ def herramienta(nombre, descripcion, propiedades, requeridos):
 
 HERRAMIENTAS = [
     herramienta("buscar_apuntes", "Busca palabras clave en apuntes y memoria Markdown. Devuelve texto con ruta y líneas.",
-                {"consulta": {"type": "string", "description": "Entre dos y cuatro palabras clave"}}, ["consulta"]),
+                {"consulta": {"type": "string", "description": "Entre dos y cuatro palabras clave"},
+                 "curso": {"type": "string"}, "asignatura": {"type": "string"}}, ["consulta"]),
     herramienta("guardar_memoria", "Guarda una nota persistente cuando el usuario lo pide. El programa solicita confirmación.",
                 {"titulo": {"type": "string"}, "contenido": {"type": "string"}}, ["titulo", "contenido"]),
     herramienta("calcular_oee", "Calcula disponibilidad, rendimiento, calidad y OEE. Tiempos de turno en minutos; ciclo en segundos por pieza.",
@@ -59,6 +61,18 @@ HERRAMIENTAS = [
                     "minutos_planificados", "minutos_marcha", "piezas_totales", "piezas_buenas", "ciclo_ideal_segundos")},
                 ["minutos_planificados", "minutos_marcha", "piezas_totales", "piezas_buenas", "ciclo_ideal_segundos"]),
 ]
+
+
+HERRAMIENTAS_BASE = list(HERRAMIENTAS)
+from academia import Academia, NOMBRES as HERRAMIENTAS_ACADEMICAS, especificaciones
+HERRAMIENTAS += especificaciones()
+INSTRUCCIONES += '''\nOrganiza la carrera por cursos y asignaturas con las herramientas académicas.
+Usa listar_carrera antes de actuar si no conoces los IDs. Usa crear_curso y crear_asignatura
+solo cuando el alumno lo pida. anadir_material registra temas, apuntes, tareas y exámenes;
+no inventes contenidos ni fechas. consultar_agenda muestra pendientes y vencidos.
+actualizar_tarea permite marcar avances. quitar_asignatura y quitar_material archivan;
+no ejecutes borrados con comandos. Solo modifica la carrera por petición del alumno.
+'''
 
 
 def palabras(texto):
@@ -80,16 +94,50 @@ def archivos_md(boveda):
                 continue
             if archivo.stat().st_size <= 100_000:
                 yield archivo
+    # Cursos organizados: sin enlaces/junctions ni papelera.
+    gestor = Academia(boveda)
+    cursos = gestor.ruta('cursos')
+    if cursos.is_dir():
+        cantidad = 0
+        for directorio, carpetas, archivos in os.walk(cursos, followlinks=False):
+            permitidas = []
+            for c in sorted(carpetas):
+                try:
+                    gestor.ruta((Path(directorio) / c).relative_to(boveda).as_posix())
+                    permitidas.append(c)
+                except ValueError:
+                    continue
+            carpetas[:] = permitidas
+            for n in sorted(archivos):
+                if not n.endswith('.md'):
+                    continue
+                try:
+                    p = gestor.ruta((Path(directorio) / n).relative_to(boveda).as_posix())
+                    if p.stat().st_size <= 1_250_000:
+                        yield p
+                        cantidad += 1
+                        if cantidad >= 1000:
+                            return
+                except (OSError, ValueError):
+                    continue
 
 
-def buscar_apuntes(consulta, boveda=BOVEDA):
+def buscar_apuntes(consulta, boveda=BOVEDA, curso='', asignatura=''):
     if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 300:
         raise ValueError("La consulta debe contener entre 1 y 300 caracteres.")
     terminos = palabras(consulta)
     if not terminos:
         return {"resultados": [], "aviso": "Usa palabras clave concretas."}
     candidatos = []
+    filtro = None
+    if asignatura and not curso:
+        raise ValueError('Indica el curso para filtrar por asignatura.')
+    if curso:
+        gestor = Academia(boveda)
+        filtro = gestor.asignatura(curso, asignatura) if asignatura else gestor.curso(curso)
     for archivo in archivos_md(boveda):
+        if filtro and filtro not in archivo.parents:
+            continue
         lineas = archivo.read_text(encoding="utf-8-sig").splitlines()
         for inicio in range(0, len(lineas), 8):
             bloque = "\n".join(lineas[inicio:inicio + 12])
@@ -155,6 +203,8 @@ def ejecutar_herramienta(nombre, argumentos, boveda=BOVEDA, confirmar=input):
         return guardar_memoria(boveda=boveda, confirmar=confirmar, **argumentos)
     if nombre == "calcular_oee":
         return calcular_oee(**argumentos)
+    if nombre in HERRAMIENTAS_ACADEMICAS:
+        return getattr(Academia(boveda), nombre)(**argumentos)
     raise ValueError(f"Herramienta desconocida: {nombre}")
 
 

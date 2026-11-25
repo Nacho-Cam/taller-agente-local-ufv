@@ -309,6 +309,8 @@ def calibrar(config):
 
 
 def configurar_opencode(config):
+    from academia import Academia
+    Academia(RAIZ / 'boveda').panel()
     # La raíz hace visibles notas, ejemplos y documentación también en Desktop.
     # OpenCode encuentra este mismo archivo al abrir un clon Git o un ZIP.
     espacio = RAIZ
@@ -317,12 +319,28 @@ def configurar_opencode(config):
     boveda = (RAIZ / 'boveda').as_posix()
     instrucciones = (
         'Eres el tutor UFV de Ingeniería de la Industria Conectada. Responde en español. '
+        'Eres un asistente de la carrera: organiza cursos, asignaturas, temas, apuntes, tareas y exámenes. '
+        f'La fecha de hoy es {time.strftime("%Y-%m-%d")}. '
         f'Todo el material del taller está en {RAIZ.as_posix()}. '
         f'Tu mapa de notas es {boveda}/Inicio.md. Apuntes: {boveda}/apuntes. '
         f'Memoria persistente: {boveda}/memoria. Consulta esa carpeta cuando pregunten por objetivos o recuerdos. '
         'Puedes leer los archivos directamente o usar buscar_apuntes del servidor MCP ufv-local para buscar apuntes y memoria. '
         'Antes de responder sobre apuntes, consulta las fuentes y cita archivo y líneas. '
         'Para OEE usa calcular_oee de ufv-local; pide solo los datos que falten. '
+        'Usa listar_carrera para conocer cursos, asignaturas y los IDs de materiales. '
+        'Las rutas devueltas por las herramientas son relativas a la bóveda. Filtra buscar_apuntes por curso y asignatura cuando corresponda. '
+        'crear_curso crea un curso; crear_asignatura lo añade al curso elegido. '
+        'anadir_material añade tema, apunte, tarea o examen; acepta contenido, tema y fecha AAAA-MM-DD. '
+        'importar_material añade un adjunto mediante archivo_origen, solo cuando el alumno indica un archivo. '
+        'Copia todos los campos indicados por el alumno; usa cadena vacía para tema, contenido, fecha o archivo_origen no indicados, sin inventarlos. '
+        'Los PDFs importados se copian y se extrae su texto; los escaneados necesitan OCR externo. '
+        'consultar_agenda muestra pendientes por fecha; actualizar_tarea marca avances. '
+        'quitar_asignatura y quitar_material llevan a papelera; restaurar_asignatura recupera la asignatura completa. '
+        'Usa esas herramientas para modificar la carrera, sin comandos ni ediciones libres de su estructura. '
+        'Solo modifica o importa por petición del alumno. No inventes el plan oficial de la universidad, fechas ni entregas. '
+        'Para preparar un examen, lista sus materiales, consulta los temas y ofrece repaso y preguntas basadas en esas fuentes. '
+        'Para una tarea, lee el enunciado y su fecha y explica pasos y criterios, distinguiendo datos del profesor de tus propuestas. '
+        'Marcar completado solo actualiza la agenda local; no significa entregar una tarea en Canvas. '
         'consultar_tutor_local permite delegar una pregunta al modelo local; úsalo solo si te piden delegar. '
         f'Para dudas sobre el taller consulta {RAIZ.as_posix()}/docs y {RAIZ.as_posix()}/README.md. '
         'Da pistas antes de resolver ejercicios. Si no encuentras información, dilo. '
@@ -339,11 +357,11 @@ def configurar_opencode(config):
         'providers': {'ollama': {'settings': {'baseURL': config['url'] + '/v1'},
                                 'models': {config['modelo']: {'limit': {'context': config['contexto'], 'output': config['salida_tokens']},
                                                             'body': {'reasoning_effort': 'none', 'max_tokens': config['salida_tokens']}}}}},
-        'agents': {'tutor': {'description': 'Tutor de asignaturas con apuntes y memoria Markdown.', 'mode': 'primary',
+        'agents': {'tutor': {'description': 'Asistente de la carrera: cursos, asignaturas, temas, tareas, exámenes y estudio con fuentes.', 'mode': 'primary',
                              'system': instrucciones,
                              'steps': 6}},
         'mcp': {'servers': {'ufv-local': {
-            'type': 'local', 'command': [sys.executable, str(RAIZ / 'integraciones/servidor_mcp.py'), '--boveda', str(RAIZ / 'boveda')],
+            'type': 'local', 'command': [sys.executable, str(RAIZ / 'integraciones/servidor_mcp.py'), '--boveda', str(RAIZ / 'boveda'), '--gestion-academica'],
             'cwd': str(RAIZ), 'codemode': False, 'protocol': 'auto',
             'timeout': {'startup': 30000, 'execution': 180000}}}},
         'permissions': [{'action': 'shell', 'resource': '*', 'effect': 'ask'},
@@ -381,6 +399,7 @@ def probar_mcp(config):
         raise RuntimeError('No se pudo preparar MCP. Repite preparar.ps1 o iniciar.sh para instalar sus dependencias: ' + str(error)) from error
     (LOCAL / 'comprobacion-mcp.json').write_text(json.dumps(resultado, indent=2), encoding='utf-8')
     config['mcp_validado'] = resultado['ok']
+    config['mcp_revision'] = 2
     print('  Apuntes y cálculo OEE: correctos.', flush=True)
 
 
@@ -507,7 +526,7 @@ def main():
             from herramientas.opencode_desktop import instalar
             config['opencode_desktop_bin'] = instalar(config['hardware'])
             entorno.guardar(config)
-        if config.get('opencode_bin') and not config.get('mcp_validado'):
+        if config.get('opencode_bin') and (not config.get('mcp_validado') or config.get('mcp_revision', 0) < 2):
             probar_mcp(config)
             entorno.guardar(config)
         if args.accion == 'preparar':

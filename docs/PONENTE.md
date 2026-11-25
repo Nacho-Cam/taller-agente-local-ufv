@@ -50,6 +50,11 @@ No rellenar empresa, responsabilidades ni logros sin tus datos.
 
 Abre el agente y una carpeta con los apuntes, lado a lado.
 
+Enseña también el caso de uso académico: crea un curso y una asignatura, añade una
+tarea y un examen con fechas, consulta la agenda y muestra `Carrera.md` en Obsidian.
+Para que puedan seguirlo sin inventar datos de sus asignaturas, usa los ejemplos de
+[CARRERA.md](CARRERA.md). Después pueden incorporar sus materiales reales.
+
 1. «Busca el topic MQTT que usamos en nuestra maqueta y cita la fuente».
 2. «Recuerda que quiero repasar OEE con ejemplos de fabricación». Confirma la nota.
 3. Reinicia y pregunta qué querías repasar. Enseña el archivo persistente.
