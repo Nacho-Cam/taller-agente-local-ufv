@@ -5,19 +5,24 @@ Construye un asistente que consulta apuntes, guarda memoria entre sesiones y usa
 una función de Python para calcular el OEE de una línea ficticia.
 
 **Ollama + Python + archivos Markdown**, con OpenCode 2 Mini como interfaz de uso.
-Sin claves API ni Docker. Obsidian es opcional. La práctica no se conecta a Canvas.
+Sin claves API ni Docker. Obsidian se incluye para ver y editar las notas. La práctica no se conecta a Canvas.
 
 ## Arranque automático recomendado
 
-Descarga el [ZIP de la versión actual](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
-y extráelo completo.
+En Windows, descarga **Instalar-Taller-UFV.exe** de [la versión actual](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
+y ejecútalo. Descarga el ZIP de esa versión, verifica su hash y prepara el entorno
+en tu usuario. La consola muestra el progreso. No necesitas instalar Python antes.
+
+También puedes descargar el ZIP y extraerlo completo:
 
 - **Windows:** abre `iniciar.cmd`.
 - **macOS/Linux:** abre una terminal en la carpeta y ejecuta `bash iniciar.sh`.
 
-La primera ejecución prepara Python, instala Ollama y OpenCode en el proyecto si
+La primera ejecución prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
 hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
-Después abre el tutor en OpenCode. Hazlo antes de clase: necesita internet,
+Después abre Obsidian y el tutor en OpenCode. La primera vez elige **Abrir carpeta
+como bóveda** y selecciona `boveda/`, cuya ruta se muestra en la consola.
+Hazlo antes de clase: necesita internet,
 varios GB de descargas y al menos 7 GB libres para preparar el entorno.
 
 Los límites se guardan en `.local/ajustes.json`. La propuesta va de uno a tres agentes;
@@ -30,11 +35,14 @@ En Windows puedes lanzar también:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\preparar.ps1 -Accion terminal
 powershell -NoProfile -ExecutionPolicy Bypass -File .\preparar.ps1 -Accion equipo
+powershell -NoProfile -ExecutionPolicy Bypass -File .\preparar.ps1 -Accion notas
 ```
 
 `terminal` abre nuestro agente Python para el taller. `equipo` ejecuta tres tareas
 independientes con el límite configurado. [Detalles, perfiles y recuperación](docs/ENTORNO.md).
 El arranque gestiona `psutil` y, en Linux, `zstandard`; el agente mínimo usa la biblioteca estándar.
+Para omitir Obsidian en un equipo sin escritorio, usa `-SinObsidian` en PowerShell
+o `--sin-obsidian` en el lanzador Bash. [Detalles del EXE](docs/INSTALADOR_WINDOWS.md).
 
 ## Instalación manual alternativa
 

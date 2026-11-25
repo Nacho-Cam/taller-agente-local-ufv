@@ -8,6 +8,10 @@ publicados por los distribuidores. No instalan controladores de GPU.
 
 ## Windows
 
+Desde la versión 0.4 puedes usar **Instalar-Taller-UFV.exe**. Descarga y verifica
+el paquete del repositorio, lo extrae en tu usuario y ejecuta este mismo arranque.
+Consulta [INSTALADOR_WINDOWS.md](INSTALADOR_WINDOWS.md).
+
 Extrae el ZIP completo y abre **iniciar.cmd**. La primera vez instala lo necesario,
 detecta el equipo y hace una prueba del modelo; después abre el tutor de OpenCode.
 Windows puede pedirte autorizar el lanzamiento de software descargado.
@@ -49,6 +53,14 @@ oficial de Ollama. En todos los sistemas se usa `psutil` para identificar de for
 segura el servidor iniciado por este proyecto.
 
 ## Qué se configura
+
+Obsidian 1.15.1 se instala por defecto: instalación de usuario en Windows,
+`~/Applications` en macOS y distribución portable oficial en Linux. Una instalación
+existente se reutiliza. La primera apertura de `boveda/` requiere elegir **Abrir
+carpeta como bóveda**; no se modifican automáticamente las otras bóvedas del usuario.
+La acción `notas` abre Obsidian sin arrancar ni preparar el modelo. Con
+`-SinObsidian` / `--sin-obsidian` se omite su instalación en el recorrido normal.
+Los nuevos recorridos macOS/Linux requieren prueba física; aquí se valida Windows.
 
 | Hardware detectado | Propuesta inicial |
 |---|---|

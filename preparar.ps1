@@ -1,8 +1,9 @@
 param(
-    [ValidateSet('preparar','iniciar','equipo','doctor','terminal')][string]$Accion = 'preparar',
+    [ValidateSet('preparar','iniciar','equipo','doctor','terminal','notas')][string]$Accion = 'preparar',
     [switch]$SoloDetectar,
     [switch]$SinOpenCode,
-    [switch]$SinCalibrar
+    [switch]$SinCalibrar,
+    [switch]$SinObsidian
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
@@ -30,6 +31,7 @@ try {
     if ($SoloDetectar) { $taskArguments += '--solo-detectar' }
     if ($SinOpenCode) { $taskArguments += '--sin-opencode' }
     if ($SinCalibrar) { $taskArguments += '--sin-calibrar' }
+    if ($SinObsidian) { $taskArguments += '--sin-obsidian' }
     & $taskUv @taskArguments
     if ($LASTEXITCODE -ne 0) { throw "La preparación terminó con código $LASTEXITCODE. Revisa el mensaje anterior." }
 } finally {

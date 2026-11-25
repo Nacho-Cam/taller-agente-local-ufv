@@ -394,6 +394,9 @@ def preparar(args):
         return config
     if shutil.disk_usage(RAIZ).free < 7 * 1024**3:
         raise RuntimeError('Se recomiendan al menos 7 GB libres para descargas, extracción y modelo.')
+    if not args.sin_obsidian:
+        from herramientas.obsidian_local import instalar
+        config['obsidian_bin'] = instalar(config['hardware'])
     config['ollama_bin'] = instalar_ollama(config['hardware'])
     if not args.sin_opencode:
         config['opencode_bin'] = instalar_opencode(config['hardware'])
@@ -421,12 +424,18 @@ def main():
         if hasattr(salida, 'reconfigure'):
             salida.reconfigure(encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser(description='Entorno automático UFV')
-    parser.add_argument('accion', choices=['preparar', 'iniciar', 'equipo', 'doctor', 'terminal'], default='iniciar', nargs='?')
+    parser.add_argument('accion', choices=['preparar', 'iniciar', 'equipo', 'doctor', 'terminal', 'notas'], default='iniciar', nargs='?')
     parser.add_argument('--solo-detectar', action='store_true')
     parser.add_argument('--sin-opencode', action='store_true')
     parser.add_argument('--sin-calibrar', action='store_true')
+    parser.add_argument('--sin-obsidian', action='store_true')
     args = parser.parse_args()
     try:
+        if args.accion == 'notas' and not args.solo_detectar:
+            from herramientas.obsidian_local import instalar, abrir
+            hardware = entorno.detectar()
+            abrir(instalar(hardware), hardware['sistema'])
+            return 0
         if args.accion == 'preparar' or not entorno.AJUSTES.exists() or args.solo_detectar:
             config = preparar(args)
             if args.solo_detectar or args.accion == 'preparar':
@@ -440,6 +449,11 @@ def main():
             print(json.dumps({'configuracion': config, 'servidor': api(config, '/api/version'), 'cargados': api(config, '/api/ps')}, ensure_ascii=False, indent=2))
             return 0
         if args.accion == 'iniciar':
+            if not args.sin_obsidian:
+                from herramientas.obsidian_local import instalar, abrir
+                config['obsidian_bin'] = instalar(config['hardware'])
+                entorno.guardar(config)
+                abrir(config['obsidian_bin'], config['hardware']['sistema'])
             if not config.get('opencode_bin') or config.get('interfaz') == 'terminal':
                 print('Abriendo el agente Python del taller.')
                 return subprocess.call([sys.executable, str(RAIZ / 'solucion/agente.py')], cwd=RAIZ)
@@ -448,7 +462,7 @@ def main():
             return subprocess.call([config['opencode_bin'], 'mini', '--standalone', '--agent', 'tutor'], cwd=espacio, env=ambiente)
         script = 'solucion/equipo.py' if args.accion == 'equipo' else 'solucion/agente.py'
         return subprocess.call([sys.executable, str(RAIZ / script)], cwd=RAIZ)
-    except (OSError, RuntimeError, ValueError, StopIteration) as error:
+    except (OSError, RuntimeError, ValueError, StopIteration, subprocess.SubprocessError) as error:
         print(f'\nNo se completó la preparación: {error}\nPuedes consultar docs/ENTORNO.md o usar el arranque manual del README.')
         return 1
     except KeyboardInterrupt:

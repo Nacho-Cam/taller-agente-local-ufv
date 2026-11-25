@@ -5,12 +5,13 @@ puede guardar notas entre sesiones. Traed **portátil y cargador**.
 
 Antes de venir:
 
-1. Descargad el ZIP desde [la versión actual del taller](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest).
-2. Extraed la carpeta completa.
-3. En Windows, abrid **iniciar.cmd**. En macOS/Linux, abrid una terminal en esa
-   carpeta y ejecutad `bash iniciar.sh`.
-4. Dejad que prepare Python, Ollama, el modelo LFM3 1.7B y OpenCode. Puede descargar
+1. En Windows descargad **Instalar-Taller-UFV.exe** desde [la versión actual del taller](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
+   y ejecutadlo. Como alternativa, descargad el ZIP, extraedlo y abrid `iniciar.cmd`.
+2. En macOS/Linux descargad el ZIP, extraedlo y ejecutad `bash iniciar.sh` en esa carpeta.
+3. Dejad que prepare Python, Obsidian, Ollama, el modelo LFM3 1.7B y OpenCode. Puede descargar
    varios GB; hacedlo en casa antes de clase, con al menos 7 GB libres.
+4. La primera vez, en Obsidian elegid **Abrir carpeta como bóveda** y seleccionad
+   la carpeta `boveda` del taller. La consola muestra su ruta.
 5. Cuando se abra el tutor, probad «Consulta los apuntes de MQTT y dime qué topic
    utiliza la maqueta; cita la fuente».
 
@@ -23,7 +24,7 @@ o un Mac Apple Silicon pueden acelerar el modelo. También hay un perfil CPU.
 Los controladores de la GPU deben estar instalados; el programa no los sustituye.
 
 No hace falta instalar Git, Node, T3 ni disponer de cuentas de pago o claves API.
-**Obsidian es opcional** para abrir y editar la carpeta `boveda/` como notas.
+**Obsidian se instala** para abrir y editar la carpeta `boveda/` como notas.
 Usaremos apuntes ficticios incluidos; no hace falta conectar Canvas.
 
 Si ya tenéis Ollama, el taller usa un servidor local independiente. Para ayuda y

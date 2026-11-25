@@ -5,6 +5,8 @@
 Para una hora, el soporte de memoria son archivos locales `.md`. Obsidian puede
 abrir la misma carpeta y mostrar las notas que escribe el programa. La práctica
 no depende de instalar Obsidian ni de sus plugins.
+Desde la versión 0.4 el instalador incluye Obsidian por defecto para que los alumnos
+tengan también el editor de notas. El agente sigue trabajando con los archivos Markdown.
 
 Distinguimos tres cosas:
 

@@ -92,7 +92,8 @@ actividad práctica: construir un pequeño asistente local que consulte apuntes
 y guarde notas para futuras sesiones.
 
 Que traigan portátil y cargador. Te paso un arranque que prepara Python, Ollama,
-el modelo y OpenCode antes de venir; Obsidian será opcional.
+el modelo, OpenCode y Obsidian antes de venir. La primera apertura de la bóveda se
+completa en el selector de carpetas de Obsidian.
 Llevaré una plantilla y una versión completa en GitHub para que puedan seguir
 y continuar después. Podemos trabajar por parejas si algún equipo da problemas.
 
