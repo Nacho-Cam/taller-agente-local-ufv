@@ -4,6 +4,9 @@ import os
 import plistlib
 import shutil
 import subprocess
+import hashlib
+import tempfile
+import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -79,21 +82,96 @@ def registro(sistema):
 
 def boveda_conocida(sistema, boveda):
     try:
-        datos = json.loads(registro(sistema).read_text(encoding='utf-8'))
+        datos = json.loads(registro(sistema).read_text(encoding='utf-8-sig'))
+        if not isinstance(datos, dict) or not isinstance(datos.get('vaults', {}), dict):
+            return False
         return any(Path(v['path']).resolve() == Path(boveda).resolve() for v in datos.get('vaults', {}).values())
     except (OSError, ValueError, KeyError, TypeError):
         return False
+
+
+def cerrar_para_registrar(sistema, binario):
+    """Cierre normal para que Obsidian guarde su estado antes de modificar su registro."""
+    import psutil
+    usuario = psutil.Process().username()
+    procesos = []
+    for proceso in psutil.process_iter(['exe', 'username']):
+        try:
+            exe = Path(proceso.info['exe'] or '').resolve()
+            coincide = exe == Path(binario).resolve() if sistema != 'Darwin' else Path(binario).resolve() in exe.parents
+            if coincide and proceso.info['username'] == usuario:
+                procesos.append(proceso)
+        except (OSError, psutil.Error):
+            continue
+    if not procesos:
+        return
+    print('Obsidian se reiniciará para añadir la bóveda del taller; se conservarán las otras bóvedas.', flush=True)
+    if sistema == 'Windows':
+        import ctypes
+        from ctypes import wintypes
+        usuario32 = ctypes.windll.user32
+        usuario32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        usuario32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        pids = {p.pid for p in procesos}
+        tipo = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def cerrar(ventana, _):
+            pid = wintypes.DWORD()
+            usuario32.GetWindowThreadProcessId(ventana, ctypes.byref(pid))
+            if pid.value in pids:
+                usuario32.PostMessageW(ventana, 0x0010, 0, 0)  # WM_CLOSE, sin terminar a la fuerza.
+            return True
+        usuario32.EnumWindows(tipo(cerrar), 0)
+    elif sistema == 'Darwin':
+        subprocess.run(['osascript', '-e', 'tell application "Obsidian" to quit'], check=True, timeout=15)
+    else:
+        for proceso in procesos:
+            proceso.terminate()
+    _, pendientes = psutil.wait_procs(procesos, timeout=10)
+    if pendientes:
+        raise RuntimeError('Obsidian no ha terminado su cierre normal. Ciérralo y repite; no se ha modificado su registro.')
+
+
+def registrar_boveda(sistema, binario, boveda):
+    boveda = Path(boveda).resolve()
+    if boveda_conocida(sistema, boveda):
+        return
+    cerrar_para_registrar(sistema, binario)
+    archivo = registro(sistema)
+    if archivo.is_symlink():
+        raise ValueError('El registro de Obsidian es un enlace; no se modifica automáticamente.')
+    anterior = archivo.read_bytes() if archivo.exists() else None
+    datos = json.loads(anterior.decode('utf-8-sig')) if anterior else {}
+    if not isinstance(datos, dict) or not isinstance(datos.get('vaults', {}), dict):
+        raise ValueError('Formato de registro Obsidian desconocido; no se ha modificado.')
+    vaults = datos.setdefault('vaults', {})
+    clave = hashlib.sha256(str(boveda).encode('utf-8')).hexdigest()[:16]
+    if clave in vaults and Path(vaults[clave]['path']).resolve() != boveda:
+        raise ValueError('Colisión de identificador de bóveda; no se ha modificado el registro.')
+    vaults[clave] = {'path': str(boveda), 'ts': int(time.time() * 1000), 'open': True}
+    archivo.parent.mkdir(parents=True, exist_ok=True)
+    copia = archivo.with_name('obsidian.json.ufv-backup')
+    if anterior is not None and not copia.exists():
+        with copia.open('xb') as salida:
+            salida.write(anterior)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=archivo.parent, prefix='.ufv-', suffix='.tmp', delete=False) as salida:
+        json.dump(datos, salida, ensure_ascii=False)
+        temporal = Path(salida.name)
+    temporal.replace(archivo)
+
+
+def lanzar(binario, sistema, uri):
+    if sistema == 'Windows':
+        os.startfile(uri)
+    else:
+        comando = ['open', '-a', binario, uri] if sistema == 'Darwin' else [binario, uri]
+        subprocess.Popen(comando, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def abrir(binario, sistema, boveda=None):
     boveda = Path(boveda or RAIZ / 'boveda').resolve()
     if not boveda.is_dir():
         raise ValueError('No existe la bóveda del taller.')
-    conocida = boveda_conocida(sistema, boveda)
-    uri = 'obsidian://open?path=' + quote(str(boveda / 'Inicio.md'), safe='') if conocida else 'obsidian://choose-vault'
-    comando = ['open', '-a', binario, uri] if sistema == 'Darwin' else [binario, uri]
-    # Ventana visible solicitada por el usuario; no habilita plugins ni modifica otras bóvedas.
-    subprocess.Popen(comando, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if not conocida:
-        print(f'Primera apertura: en Obsidian elige "Abrir carpeta como bóveda" y selecciona:\n{boveda}', flush=True)
-    return conocida
+    registrar_boveda(sistema, binario, boveda)
+    uri = 'obsidian://open?path=' + quote(str(boveda / 'Inicio.md'), safe='')
+    lanzar(binario, sistema, uri)
+    return True

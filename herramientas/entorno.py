@@ -395,8 +395,9 @@ def preparar(args):
     if shutil.disk_usage(RAIZ).free < 7 * 1024**3:
         raise RuntimeError('Se recomiendan al menos 7 GB libres para descargas, extracción y modelo.')
     if not args.sin_obsidian:
-        from herramientas.obsidian_local import instalar
+        from herramientas.obsidian_local import instalar, registrar_boveda
         config['obsidian_bin'] = instalar(config['hardware'])
+        registrar_boveda(config['hardware']['sistema'], config['obsidian_bin'], RAIZ / 'boveda')
     config['ollama_bin'] = instalar_ollama(config['hardware'])
     if not args.sin_opencode:
         config['opencode_bin'] = instalar_opencode(config['hardware'])

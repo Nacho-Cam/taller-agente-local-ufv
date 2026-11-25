@@ -8,9 +8,21 @@ from unittest.mock import patch
 
 from herramientas.instalador_windows import CARPETA, extraer_paquete
 from herramientas import obsidian_local
+from herramientas import instalador_windows
 
 
 class InstaladorWindows(unittest.TestCase):
+    def test_arranque_instalado_no_necesita_red(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            proyecto = raiz / CARPETA
+            proyecto.mkdir()
+            (proyecto / 'preparar.ps1').write_text('contenido')
+            (proyecto / '.ufv-paquete.json').write_text(json.dumps({'sha256': 'abc'}))
+            (raiz / 'instalador-build.json').write_text(json.dumps({'version': 'prueba', 'sha256': 'abc', 'url': 'https://example.invalid'}))
+            with patch.object(instalador_windows.sys, '_MEIPASS', str(raiz), create=True), patch.object(instalador_windows.sys, 'argv', ['instalador', '--destino', str(raiz), '--accion', 'notas']), patch.object(instalador_windows, 'urlopen', side_effect=AssertionError('No debe descargar')), patch.object(instalador_windows.subprocess, 'call', return_value=0):
+                self.assertEqual(instalador_windows.main(), 0)
+
     def paquete(self, raiz, nombres):
         archivo = raiz / 'paquete.zip'
         with zipfile.ZipFile(archivo, 'w') as z:
@@ -49,10 +61,25 @@ class InstaladorWindows(unittest.TestCase):
             vault.mkdir()
             registro = raiz / 'obsidian.json'
             registro.write_text(json.dumps({'vaults': {'uno': {'path': str(vault)}}}))
-            with patch.object(obsidian_local, 'registro', return_value=registro), patch.object(obsidian_local.subprocess, 'Popen') as lanzar:
+            with patch.object(obsidian_local, 'registro', return_value=registro), patch.object(obsidian_local, 'lanzar') as lanzar:
                 self.assertTrue(obsidian_local.abrir('Obsidian.exe', 'Windows', vault))
-                self.assertIn('obsidian://open?path=', lanzar.call_args.args[0][1])
+                self.assertIn('obsidian://open?path=', lanzar.call_args.args[2])
             registro.write_text('{"vaults":{}}')
-            with patch.object(obsidian_local, 'registro', return_value=registro), patch.object(obsidian_local.subprocess, 'Popen') as lanzar:
-                self.assertFalse(obsidian_local.abrir('Obsidian.exe', 'Windows', vault))
-                self.assertEqual(lanzar.call_args.args[0][1], 'obsidian://choose-vault')
+            with patch.object(obsidian_local, 'registro', return_value=registro), patch.object(obsidian_local, 'lanzar') as lanzar, patch.object(obsidian_local, 'cerrar_para_registrar'):
+                self.assertTrue(obsidian_local.abrir('Obsidian.exe', 'Windows', vault))
+                self.assertTrue(obsidian_local.boveda_conocida('Windows', vault))
+
+    def test_registro_conserva_otras_bovedas_y_copia_original(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            registro = raiz / 'obsidian.json'
+            original = json.dumps({'vaults': {'otra': {'path': str(raiz / 'otra'), 'open': True}}, 'opcion': 'conservar'})
+            registro.write_text(original)
+            with patch.object(obsidian_local, 'registro', return_value=registro), patch.object(obsidian_local, 'cerrar_para_registrar'):
+                obsidian_local.registrar_boveda('Windows', 'Obsidian.exe', raiz / 'taller')
+                obsidian_local.registrar_boveda('Windows', 'Obsidian.exe', raiz / 'taller')
+            datos = json.loads(registro.read_text())
+            self.assertEqual(len(datos['vaults']), 2)
+            self.assertEqual(datos['opcion'], 'conservar')
+            self.assertTrue(datos['vaults']['otra']['open'])
+            self.assertEqual((raiz / 'obsidian.json.ufv-backup').read_text(), original)

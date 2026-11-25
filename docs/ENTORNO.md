@@ -56,8 +56,10 @@ segura el servidor iniciado por este proyecto.
 
 Obsidian 1.15.1 se instala por defecto: instalación de usuario en Windows,
 `~/Applications` en macOS y distribución portable oficial en Linux. Una instalación
-existente se reutiliza. La primera apertura de `boveda/` requiere elegir **Abrir
-carpeta como bóveda**; no se modifican automáticamente las otras bóvedas del usuario.
+existente se reutiliza. El arranque registra `boveda/` y abre `Inicio.md` automáticamente.
+Si Obsidian está abierto al añadir una bóveda nueva, lo cierra normalmente antes
+de registrar la carpeta. Conserva las otras bóvedas y guarda una copia del registro
+original como `obsidian.json.ufv-backup` junto al archivo de configuración global.
 La acción `notas` abre Obsidian sin arrancar ni preparar el modelo. Con
 `-SinObsidian` / `--sin-obsidian` se omite su instalación en el recorrido normal.
 Los nuevos recorridos macOS/Linux requieren prueba física; aquí se valida Windows.

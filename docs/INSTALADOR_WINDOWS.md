@@ -9,13 +9,15 @@ ejecuta para el usuario actual.
 ## Qué sucede al ejecutarlo
 
 1. Descarga el ZIP de la versión fijada, verifica SHA256 y lo extrae en
-   `%LOCALAPPDATA%\Programs\TallerUFV\0.4.0\taller-agente-local-ufv`.
+   `%LOCALAPPDATA%\Programs\TallerUFV\0.4.1\taller-agente-local-ufv`.
 2. Ejecuta `preparar.ps1`, el mismo arranque que contiene el repositorio.
 3. Prepara Python, instala Obsidian 1.15.1 en el usuario y prepara Ollama, OpenCode,
    LFM3 y el perfil de hardware. Reutiliza Obsidian si ya existe.
 4. Comprueba inferencia, herramientas y una lectura real de los apuntes desde OpenCode.
-5. Abre Obsidian y el tutor. En Obsidian, selecciona **Abrir carpeta como bóveda**
-   y elige `boveda` dentro de la ruta que muestra la consola. Solo hace falta la primera vez.
+5. Registra la bóveda del taller y abre Obsidian en `Inicio.md`, junto al tutor.
+   No requiere elegir carpeta. Si Obsidian ya está abierto al registrar una bóveda
+   nueva, se cierra normalmente y vuelve a abrirse. Se conservan las otras bóvedas
+   y se guarda el registro original como `obsidian.json.ufv-backup`.
 
 La aplicación Obsidian de Windows se instala normalmente en
 `%LOCALAPPDATA%\Programs\Obsidian\Obsidian.exe`. La configuración del taller y las
@@ -26,6 +28,7 @@ La descarga inicial requiere internet y varios GB libres. El EXE no incluye el
 modelo ni todos los programas dentro del propio archivo. Si se repite con la misma
 versión y destino, conserva apuntes, memoria y configuración. Rechaza un destino con
 otro paquete en lugar de sobrescribirlo. El EXE no lleva firma de editor propia.
+Una vez instalado, reutiliza la carpeta sin descargar el ZIP de nuevo.
 
 ## Probar en otra carpeta
 

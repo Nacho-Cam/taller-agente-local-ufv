@@ -49,16 +49,26 @@ def main():
     destino = args.destino or Path(os.environ['LOCALAPPDATA']) / 'Programs/TallerUFV' / meta['version']
     print(f'Taller UFV {meta["version"]}\nInstalación: {destino}\n', flush=True)
     try:
-        with tempfile.TemporaryDirectory(prefix='ufv-descarga-') as temporal:
-            archivo = Path(temporal) / 'taller.zip'
-            print('Descargando el material oficial del repositorio...', flush=True)
-            with urlopen(meta['url'], timeout=60) as respuesta, archivo.open('wb') as salida:
-                while bloque := respuesta.read(1024 * 1024):
-                    salida.write(bloque)
-            proyecto = extraer_paquete(archivo, destino, meta['sha256'])
+        proyecto = destino / CARPETA
+        marcador = proyecto / '.ufv-paquete.json'
+        if marcador.is_file() and json.loads(marcador.read_text())['sha256'] == meta['sha256'] and (proyecto / 'preparar.ps1').is_file():
+            print('Se reutiliza el taller instalado; no hace falta descargar el ZIP.', flush=True)
+        else:
+            with tempfile.TemporaryDirectory(prefix='ufv-descarga-') as temporal:
+                archivo = Path(temporal) / 'taller.zip'
+                print('Descargando el material oficial del repositorio...', flush=True)
+                with urlopen(meta['url'], timeout=60) as respuesta, archivo.open('wb') as salida:
+                    while bloque := respuesta.read(1024 * 1024):
+                        salida.write(bloque)
+                proyecto = extraer_paquete(archivo, destino, meta['sha256'])
         print('Paquete verificado. Preparando el entorno; la primera vez puede tardar varios minutos.', flush=True)
+        if sys.platform == 'win32' and getattr(sys, 'frozen', False):
+            import ctypes
+            # No propagar a Python/Ollama las DLL temporales del propio EXE.
+            ctypes.windll.kernel32.SetDllDirectoryW(None)
         resultado = subprocess.call(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-File', str(proyecto / 'preparar.ps1'), '-Accion', args.accion], cwd=proyecto)
+            '-File', str(proyecto / 'preparar.ps1'), '-Accion', args.accion], cwd=proyecto,
+            env=dict(os.environ, _PYI_RESET_ENVIRONMENT='1'))
         if resultado:
             raise RuntimeError(f'La preparación devolvió el código {resultado}. Revisa el mensaje anterior.')
         print(f'Listo. El taller queda en:\n{proyecto}', flush=True)

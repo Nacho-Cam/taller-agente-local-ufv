@@ -20,8 +20,8 @@ También puedes descargar el ZIP y extraerlo completo:
 
 La primera ejecución prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
 hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
-Después abre Obsidian y el tutor en OpenCode. La primera vez elige **Abrir carpeta
-como bóveda** y selecciona `boveda/`, cuya ruta se muestra en la consola.
+Después abre Obsidian directamente en `boveda/Inicio.md` y el tutor en OpenCode.
+La carpeta del taller queda registrada automáticamente como bóveda.
 Hazlo antes de clase: necesita internet,
 varios GB de descargas y al menos 7 GB libres para preparar el entorno.
 
@@ -124,8 +124,8 @@ boveda/
   memoria/       ← notas que autorizas guardar
 ```
 
-En [Obsidian](https://obsidian.md/), selecciona «Open folder as vault» y abre
-`boveda`. También puedes usar cualquier editor. No necesitas plugins ni una cuenta.
+El arranque abre `boveda` en [Obsidian](https://obsidian.md/) automáticamente.
+También puedes usar cualquier editor. No necesitas plugins ni una cuenta.
 
 Pide «Recuerda que quiero repasar OEE con ejemplos de fabricación». El programa
 te muestra la nota y pregunta si quieres guardarla. Confirma con `s`.
