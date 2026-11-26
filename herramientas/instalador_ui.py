@@ -70,7 +70,7 @@ def abrir_terminal(proyecto, componentes):
     linea = shlex.join(comando)
     if sys.platform == 'darwin':
         # JSON genera un literal AppleScript seguro para comillas y barras.
-        return subprocess.Popen(['osascript', '-e', 'tell application "Terminal" to do script ' + json.dumps(linea)], env=ambiente)
+        return subprocess.Popen(['osascript', '-e', 'tell application "Terminal" to do script ' + json.dumps(linea, ensure_ascii=False)], env=ambiente)
     for ejecutable, opciones in [('x-terminal-emulator', ['-e']), ('gnome-terminal', ['--']),
                                 ('konsole', ['-e']), ('xterm', ['-e'])]:
         if shutil.which(ejecutable):

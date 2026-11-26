@@ -232,7 +232,14 @@ def crear_accesos(destino, ejecutable, sistema=None):
         # Un bundle de PyInstaller necesita sus Resources/Frameworks junto al ejecutable.
         paquete = next((p for p in ejecutable.parents if p.suffix == '.app'), None)
         if paquete and ejecutable.suffix != '.py':
-            estable = destino / 'lanzador' / ('app-' + _hash(ejecutable)[:12] + '.app')
+            # En onedir la versión y el hash del ZIP están en Resources, fuera
+            # del ejecutable: también deben cambiar la identidad de la copia.
+            firma = hashlib.sha256()
+            for recurso in sorted(paquete.rglob('*')):
+                if recurso.is_file():
+                    firma.update(recurso.relative_to(paquete).as_posix().encode('utf-8'))
+                    firma.update(_hash(recurso).encode('ascii'))
+            estable = destino / 'lanzador' / ('app-' + firma.hexdigest()[:12] + '.app')
             if not estable.exists():
                 shutil.copytree(paquete, estable, symlinks=True)
             comando[0] = str(estable / ejecutable.relative_to(paquete))

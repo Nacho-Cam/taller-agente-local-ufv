@@ -144,6 +144,24 @@ class InstalacionApp(unittest.TestCase):
                 self.assertIn('--abrir', linux.read_text())
                 self.assertIn('"', linux.read_text().split('Exec=')[1])
 
+    def test_bundle_mac_se_actualiza_si_solo_cambia_metadata_externa(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            bundle = raiz / 'Descarga.app'
+            ejecutable = bundle / 'Contents/MacOS/Instalador'
+            ejecutable.parent.mkdir(parents=True)
+            ejecutable.write_bytes(b'ejecutable sin cambios')
+            recurso = bundle / 'Contents/Resources/instalador-build.json'
+            recurso.parent.mkdir()
+            recurso.write_text('{"version":"1"}')
+            with patch.object(Path, 'home', return_value=raiz / 'usuario'):
+                acceso = app.crear_accesos(raiz / 'app', ejecutable, 'Darwin')
+                lanzador1 = (acceso / 'Contents/MacOS/TallerUFV').read_text()
+                recurso.write_text('{"version":"2"}')
+                app.crear_accesos(raiz / 'app', ejecutable, 'Darwin')
+                self.assertNotEqual(lanzador1, (acceso / 'Contents/MacOS/TallerUFV').read_text())
+                self.assertEqual(len(list((raiz / 'app/lanzador').glob('*.app'))), 2)
+
 
 if __name__ == '__main__':
     unittest.main()
