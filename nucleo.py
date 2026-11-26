@@ -240,6 +240,7 @@ def chat(mensajes, modelo, herramientas):
 
 
 def nuevos_mensajes(boveda=BOVEDA):
+    boveda = Path(boveda).resolve()
     notas = [a for a in archivos_md(boveda) if a.parent.name == "memoria"]
     ultimas = sorted(notas, key=lambda a: a.name, reverse=True)[:4]
     memoria = "\n\n".join(f"[{a.relative_to(boveda).as_posix()}]\n{a.read_text(encoding='utf-8')[:1800]}" for a in ultimas)

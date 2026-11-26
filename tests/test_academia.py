@@ -69,6 +69,7 @@ class Carrera(unittest.TestCase):
         except (OSError, NotImplementedError):
             self.skipTest('El equipo no permite crear enlaces simbólicos de prueba.')
         boveda = alias / 'boveda'
+        boveda.mkdir()
         academia = Academia(boveda)
         curso = academia.crear_curso('2026-2027')['id']
         asignatura = academia.crear_asignatura(curso, 'Control')['id']
@@ -76,6 +77,10 @@ class Carrera(unittest.TestCase):
         apuntes = boveda / 'apuntes'
         apuntes.mkdir()
         (apuntes / 'lectura.md').write_text('sensor farolillo', encoding='utf-8')
+        memoria = boveda / 'memoria'
+        memoria.mkdir()
+        (memoria / 'objetivo.md').write_text('Repasar automatismos', encoding='utf-8')
+        self.assertIn('Repasar automatismos', nucleo.nuevos_mensajes(boveda)[0]['content'])
         resultados = nucleo.buscar_apuntes('farolillo', boveda)['resultados']
         self.assertEqual({r['fuente'] for r in resultados}, {material['archivo'], 'apuntes/lectura.md'})
         filtrados = nucleo.buscar_apuntes('farolillo', boveda, curso=curso, asignatura=asignatura)['resultados']
