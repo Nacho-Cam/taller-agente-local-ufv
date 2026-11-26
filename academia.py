@@ -8,11 +8,14 @@ import stat
 import tempfile
 import unicodedata
 import uuid
+from typing import Literal
 from datetime import date
 from pathlib import Path
 
 TIPOS = {'tema': 'temas', 'apunte': 'apuntes', 'tarea': 'tareas', 'examen': 'examenes'}
 ESTADOS = ('pendiente', 'en_curso', 'completado')
+DOCUMENTOS = {'.md', '.pdf', '.txt', '.csv', '.docx', '.pptx', '.xlsx', '.xls', '.png', '.jpg', '.jpeg', '.webp'}
+INDICE_IMPORTACION = '_ufv_organizacion_academica.json'
 LECTURA = {'listar_carrera', 'consultar_agenda'}
 NOMBRES = ('listar_carrera', 'crear_curso', 'crear_asignatura', 'quitar_asignatura',
            'restaurar_asignatura', 'anadir_material', 'importar_material', 'actualizar_tarea', 'quitar_material', 'consultar_agenda')
@@ -35,6 +38,17 @@ def slug(valor, prefijo):
     if not texto:
         raise ValueError('El nombre necesita alguna letra o número.')
     return prefijo + '-' + texto[:90]
+
+
+def numero_curso(nombre):
+    """Reconoce solo nombres completos inequívocos; no deduce años académicos."""
+    texto = unicodedata.normalize('NFKD', nombre.casefold()).encode('ascii', 'ignore').decode()
+    texto = re.sub(r'[\s_-]+', '', texto)
+    ordinales = {'primero': 1, 'segundo': 2, 'tercero': 3, 'cuarto': 4, 'quinto': 5, 'sexto': 6}
+    if texto in ordinales:
+        return ordinales[texto]
+    coincidencia = re.fullmatch(r'(?:curso)?([1-6])(?:o)?(?:curso)?', texto)
+    return int(coincidencia[1]) if coincidencia else None
 
 
 def comprobar_fecha(valor):
@@ -99,7 +113,16 @@ class Academia:
     def curso(self, curso):
         p = self.ruta('cursos', slug(curso, 'curso'))
         if not (p / 'Curso.md').is_file():
-            raise ValueError('No existe ese curso. Usa listar_carrera o crear_curso.')
+            numero = numero_curso(curso)
+            candidatos = []
+            if numero:
+                for nota in self.ruta('cursos').glob('*/Curso.md'):
+                    datos, _ = self.leer(nota)
+                    if numero_curso(datos.get('nombre', '')) == numero:
+                        candidatos.append(nota.parent)
+            if len(candidatos) != 1:
+                raise ValueError('No existe ese curso. Usa listar_carrera o crear_curso.')
+            p = candidatos[0]
         self.ruta(self.relativa(p / 'Curso.md'))
         return p
 
@@ -116,13 +139,15 @@ class Academia:
             base = self.ruta(self.relativa(p / carpeta))
             if not base.is_dir():
                 continue
-            for f in sorted(base.glob('*.md'))[:500]:
+            for f in sorted(base.glob('*.md')):
                 datos, _ = self.leer(f)
                 resultado.append(dict(datos, archivo=self.relativa(f)))
         return resultado
 
-    def listar_carrera(self, curso: str = '', asignatura: str = '') -> dict:
-        """Lista cursos y asignaturas. Si indicas curso y asignatura, devuelve sus temas, apuntes, tareas y exámenes con IDs."""
+    def listar_carrera(self, curso: str = '', asignatura: str = '', limite: int = 25, desplazamiento: int = 0) -> dict:
+        """Lista cursos y asignaturas con recuentos. Con curso y asignatura devuelve materiales e IDs, 25 por página. Si hay_mas, repite con siguiente_desplazamiento. limite: 1..50."""
+        if type(limite) is not int or not 1 <= limite <= 50 or type(desplazamiento) is not int or desplazamiento < 0:
+            raise ValueError('Usa limite entero entre 1 y 50 y desplazamiento entero no negativo.')
         if asignatura and not curso:
             raise ValueError('Indica el curso de esa asignatura.')
         base = self.ruta('cursos')
@@ -136,9 +161,66 @@ class Academia:
             for a in candidatos:
                 a = a if a.is_dir() else a.parent
                 meta, _ = self.leer(a / 'Asignatura.md')
-                asignaturas.append(dict(meta, archivo=self.relativa(a / 'Asignatura.md'), materiales=self.materiales(a) if asignatura else []))
+                resumen = {tipo: sum(1 for _ in self.ruta(self.relativa(a / carpeta)).glob('*.md'))
+                           for tipo, carpeta in TIPOS.items()}
+                detalle = {}
+                if asignatura:
+                    materiales = self.materiales(a)
+                    pagina = materiales[desplazamiento:desplazamiento + limite]
+                    # El listado transmite metadatos útiles; el contenido se busca aparte.
+                    pagina = [{k: v for k, v in m.items() if k in ('id', 'tipo', 'titulo', 'tema', 'fecha', 'estado', 'archivo', 'adjunto')} for m in pagina]
+                    siguiente = desplazamiento + len(pagina)
+                    detalle = {'materiales': pagina, 'total_materiales': len(materiales),
+                               'hay_mas': siguiente < len(materiales),
+                               'siguiente_desplazamiento': siguiente if siguiente < len(materiales) else None}
+                asignaturas.append(dict(meta, archivo=self.relativa(a / 'Asignatura.md'),
+                                         resumen_materiales=resumen, materiales_incluidos=bool(asignatura), **detalle))
             resultado.append(dict(datos, asignaturas=asignaturas))
-        return {'cursos': resultado, 'panel': 'Carrera.md'}
+        biblioteca = self.biblioteca() if not curso else {'nota': 'La biblioteca general está en listar_carrera sin filtros.'}
+        return {'cursos': resultado, 'panel': 'Carrera.md', 'biblioteca': biblioteca,
+                'memoria': {'ruta': 'memoria', 'uso': 'Contexto y preferencias del alumno. Los documentos están en la biblioteca y las asignaturas.'}}
+
+    def biblioteca(self):
+        """Resumen compacto de documentos generales e importaciones pendientes de clasificar."""
+        importaciones = []
+        base = self.ruta('apuntes', 'Importados')
+        if base.exists():
+            for carpeta in sorted(base.iterdir()):
+                self.ruta(self.relativa(carpeta))
+                if not carpeta.is_dir() or carpeta.name.startswith('.'):
+                    continue
+                indice = self.ruta(self.relativa(carpeta / INDICE_IMPORTACION))
+                if indice.is_file():
+                    datos = json.loads(indice.read_text(encoding='utf-8'))
+                    if datos.get('formato') != 'ufv-organizacion-1':
+                        raise ValueError('Índice de importación desconocido.')
+                    importaciones.append({'ruta': self.relativa(carpeta), 'documentos': datos['documentos'],
+                                          'organizados': datos['organizados'], 'sin_organizar': datos['sin_organizar'],
+                                          'indice': self.relativa(self.ruta(datos['indice'])) if datos.get('indice') else ''})
+                else:
+                    cantidad = sum(1 for _ in self.documentos(carpeta))
+                    importaciones.append({'ruta': self.relativa(carpeta), 'documentos': cantidad,
+                                          'organizados': 0, 'sin_organizar': cantidad})
+        generales = self.ruta('apuntes')
+        cantidad = sum(1 for _ in self.documentos(generales, excluir={'Importados'})) if generales.exists() else 0
+        return {'importaciones': importaciones, 'apuntes_generales': {'ruta': 'apuntes', 'documentos': cantidad},
+                'sin_organizar': cantidad + sum(i['sin_organizar'] for i in importaciones),
+                'nota': 'Los documentos sin organizar se pueden buscar sin filtro de curso. No implican asignaturas oficiales.'}
+
+    def documentos(self, carpeta, excluir=()):
+        """Recorre documentos sin seguir enlaces, junctions, cachés ni texto derivado."""
+        omitidos = {'.git', '.obsidian', '.venv', 'node_modules', '__pycache__', '.tools', '.local', *excluir}
+        for actual, directorios, archivos in os.walk(carpeta, followlinks=False):
+            for nombre in list(directorios):
+                if nombre.startswith('.') or nombre in omitidos or nombre.startswith('_Texto_consultable'):
+                    directorios.remove(nombre)
+                else:
+                    self.ruta(self.relativa(Path(actual) / nombre))
+            for nombre in sorted(archivos):
+                archivo = Path(actual) / nombre
+                if nombre.startswith('.') or archivo.suffix.casefold() not in DOCUMENTOS:
+                    continue
+                yield self.ruta(self.relativa(archivo))
 
     def crear_curso(self, nombre: str) -> dict:
         """Crea un curso, por ejemplo '2026-2027 tercero'. Devuelve su ID. No inventa asignaturas del plan de estudios."""
@@ -198,7 +280,7 @@ class Academia:
         self.panel()
         return {'restaurada': True, 'archivo': self.relativa(destino / 'Asignatura.md')}
 
-    def anadir_material(self, curso: str, asignatura: str, tipo: str, titulo: str,
+    def anadir_material(self, curso: str, asignatura: str, tipo: Literal['tema', 'apunte', 'tarea', 'examen'], titulo: str,
                         contenido: str = '', tema: str = '', fecha: str = '', archivo_origen: str = '') -> dict:
         """Añade tema, apunte, tarea o examen a una asignatura con contenido, tema y fecha AAAA-MM-DD. Para adjuntar un archivo usa importar_material."""
         if tipo not in TIPOS:
@@ -266,14 +348,14 @@ class Academia:
                 return p
         raise ValueError('No existe ese material en esa asignatura.')
 
-    def importar_material(self, curso: str, asignatura: str, tipo: str, titulo: str, archivo_origen: str,
+    def importar_material(self, curso: str, asignatura: str, tipo: Literal['tema', 'apunte', 'tarea', 'examen'], titulo: str, archivo_origen: str,
                           tema: str = '', contenido: str = '', fecha: str = '') -> dict:
         """Importa un archivo local indicado por el alumno como material de una asignatura. Copia el original y extrae texto de PDF, MD, TXT o CSV."""
         if not archivo_origen:
             raise ValueError('Indica la ruta del archivo que quieres importar.')
         return self.anadir_material(curso, asignatura, tipo, titulo, contenido, tema, fecha, archivo_origen)
 
-    def actualizar_tarea(self, curso: str, asignatura: str, material_id: str, estado: str, fecha: str = '') -> dict:
+    def actualizar_tarea(self, curso: str, asignatura: str, material_id: str, estado: Literal['pendiente', 'en_curso', 'completado'], fecha: str = '') -> dict:
         """Actualiza estado (pendiente, en_curso o completado) y opcionalmente fecha de una tarea o examen usando su ID."""
         if estado not in ESTADOS:
             raise ValueError('Estado: pendiente, en_curso o completado.')
@@ -324,6 +406,15 @@ class Academia:
                 for m in self.materiales(self.asignatura(c['id'], a['id'])):
                     lineas.append(f'  - {m["tipo"]}: [[{m["archivo"]}|{m["titulo"]}]] · {m.get("estado", "")} · {m.get("fecha") or "sin fecha"}')
             lineas.append('')
+        lineas += ['## Biblioteca y documentos sin organizar', '',
+                   'Los documentos importados pertenecen a la misma bóveda. Los que no tienen curso reconocido siguen disponibles mediante búsqueda general.', '']
+        biblioteca = carrera['biblioteca']
+        for entrada in biblioteca['importaciones']:
+            destino = entrada.get('indice')
+            enlace = f'[[{destino}|{Path(entrada["ruta"]).name}]]' if destino else f'`{entrada["ruta"]}`'
+            lineas.append(f'- {enlace}: {entrada["documentos"]} documentos; {entrada["organizados"]} vinculados a asignaturas; {entrada["sin_organizar"]} pendientes de organizar.')
+        lineas += [f'- Apuntes generales en `apuntes/`: {biblioteca["apuntes_generales"]["documentos"]} documentos.', '',
+                   '## Memoria', '', '`memoria/`: contexto y preferencias del alumno. Los apuntes permanecen en la biblioteca y las asignaturas.', '']
         self.ruta('Carrera.md').write_text('\n'.join(lineas), encoding='utf-8')
 
 
@@ -335,7 +426,7 @@ def especificaciones():
         for p in inspect.signature(funcion).parameters.values():
             if p.name == 'self':
                 continue
-            propiedades[p.name] = {'type': 'string'}
+            propiedades[p.name] = {'type': 'integer' if p.annotation is int else 'string'}
             if p.name == 'tipo':
                 propiedades[p.name]['enum'] = list(TIPOS)
             if p.name == 'estado':

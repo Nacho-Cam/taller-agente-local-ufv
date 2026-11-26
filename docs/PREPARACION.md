@@ -8,7 +8,7 @@ Antes de venir:
 1. En Windows descargad **Instalar-Taller-UFV.exe** desde [la versión actual del taller](https://github.com/Nacho-Cam/taller-agente-local-ufv/releases/latest)
    y ejecutadlo. Como alternativa, descargad el ZIP, extraedlo y abrid `iniciar.cmd`.
 2. En macOS/Linux descargad el ZIP, extraedlo y ejecutad `bash iniciar.sh` en esa carpeta.
-3. Dejad que prepare Python, Obsidian, Ollama, el modelo LFM3 1.7B y OpenCode. Puede descargar
+3. Dejad que prepare Python, Obsidian, Ollama, el modelo Qwen3 4B Instruct y OpenCode. Puede descargar
    varios GB; hacedlo en casa antes de clase, con al menos 7 GB libres.
    Elegid si queréis la aplicación de escritorio de OpenCode o usar solo terminal.
 4. Obsidian se abre directamente en la nota `Inicio` de la bóveda del taller.

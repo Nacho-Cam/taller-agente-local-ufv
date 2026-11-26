@@ -1,41 +1,38 @@
-# Mi asistente de Industria Conectada
+# Tu espacio de la universidad
 
-El arranque abre esta bóveda en Obsidian y el tutor en OpenCode.
-El tutor ya tiene seleccionado el modelo local y conoce las rutas de tus notas.
+Esta bóveda reúne tus asignaturas, documentos y memoria personal.
+Obsidian y el asistente consultan los mismos archivos.
 
-## Empieza aquí
+## Dónde encontrar cada cosa
 
-- Abre [[Carrera]] para ver tus cursos, asignaturas, tareas y exámenes.
-- «Crea el curso 2026-2027 tercero y la asignatura Automatización».
-- «Añade el tema Sensores a Automatización de ese curso».
-- «Añade la tarea Práctica P-101, del tema Sensores, con entrega el 2026-11-30».
-- «Añade el examen Parcial de Automatización para el 2026-12-10».
-- «¿Qué tareas y exámenes tengo pendientes?».
-- «Quita Automatización del curso 2026-2027 tercero»; después puedes pedir restaurarla.
+| Qué necesitas | Dónde mirar |
+|---|---|
+| Ver tus cursos, asignaturas y materiales | [[Carrera]]: el índice principal de la bóveda. |
+| Consultar apuntes, temas, tareas o exámenes de una asignatura | `cursos/`: entra en su curso y asignatura desde Carrera. |
+| Buscar documentos generales o carpetas que hayas importado | `apuntes/`, incluida `apuntes/Importados/`. Carrera muestra también esta biblioteca. |
+| Recuperar objetivos, preferencias y contexto personal | `memoria/`: notas que has pedido guardar para otras conversaciones. |
 
-## Practica con los ejemplos del taller
+Los documentos que todavía no estén asociados a una asignatura siguen disponibles
+en la biblioteca general. No hace falta moverlos a memoria para consultarlos.
 
-- «Consulta los apuntes de MQTT y dime qué topic usa la maqueta; cita la fuente».
-- «Busca los datos del caso OEE y calcula sus tres factores y el OEE con la herramienta».
-- «Recuerda que quiero practicar sensores de 4–20 mA». Revisa y acepta la edición propuesta.
-- En otra sesión: «¿Qué quería practicar?».
+## Cómo pedir ayuda
 
-## Tus materiales
+Puedes preguntar por tus asignaturas, localizar un documento, repasar un tema,
+añadir materiales o consultar tareas y exámenes pendientes. Indica el curso y la
+asignatura cuando ayuden a identificar lo que necesitas.
 
-- [[apuntes/OEE]]: caso práctico de una línea de producción ficticia.
-- [[apuntes/Sensores]]: ejemplo de sensor de presión con salida de 4–20 mA.
-- [[apuntes/MQTT]]: decisiones de comunicación para una práctica ficticia.
-- `apuntes/`: añade y edita aquí tus apuntes Markdown para que el tutor los consulte.
-- `memoria/`: notas que tú autorizas guardar y que el tutor puede recuperar en otra sesión.
+El asistente debe consultar las fuentes antes de responder sobre tus apuntes.
+Si no encuentra un documento, debe buscar también en la biblioteca general y
+decirte qué falta, sin inventar información.
 
-Obsidian y el tutor usan estos mismos archivos; no necesitas copiar las notas entre aplicaciones.
-Para consultar un PDF, pide al tutor importarlo como material de una asignatura.
-Conserva una copia del original y extrae el texto por páginas a una nota buscable.
-Los PDFs escaneados sin texto necesitan OCR; el taller no lo incluye.
+## Añadir tus documentos
 
-Estos documentos son ejemplos didácticos creados para el taller, no apuntes oficiales
-ni especificaciones para operar una instalación industrial real.
+Usa **Traer tus apuntes** en el instalador para importar una carpeta existente.
+Se guarda una copia y se conserva la carpeta original. También puedes pedir al
+asistente que añada un archivo concreto a una asignatura.
 
-Puedes editar o borrar las notas. El agente vuelve a leer los apuntes al buscar.
-El agente Python carga las cuatro últimas notas al iniciar; usa `/nuevo` para recargarlas.
-OpenCode puede consultar `memoria/` durante la conversación.
+Los PDF con texto quedan consultables. Los documentos escaneados necesitan OCR
+externo; otros formatos pueden conservarse como adjuntos sin texto extraído.
+
+Para aprender las funciones paso a paso, abre [la guía de uso](../docs/CARRERA.md).
+Los archivos de ejemplo incluidos en `apuntes/` son material ficticio del taller.

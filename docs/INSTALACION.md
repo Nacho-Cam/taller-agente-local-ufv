@@ -20,7 +20,7 @@ El instalador muestra una ventana con cuatro opciones:
 - **OpenCode CLI:** chat desde terminal. Puedes desactivar tanto Desktop como CLI para usar el agente Python del taller.
 - **Ajustar al rendimiento de mi equipo:** prueba el modelo y ajusta cuántas tareas pueden ejecutarse a la vez. Conviene dejarlo activado en la primera instalación.
 
-Python, Ollama, el modelo LFM3 y las herramientas académicas forman la base obligatoria. El instalador muestra las descargas y comprobaciones en el registro; la primera ejecución necesita Internet y al menos 7 GB libres. No instala controladores gráficos.
+Python, Ollama, el modelo Qwen3 4B Instruct y las herramientas académicas forman la base obligatoria. El instalador muestra las descargas y comprobaciones en el registro; la primera ejecución necesita Internet y al menos 7 GB libres. No instala controladores gráficos.
 
 Pulsa **Instalar selección** y, cuando termine, **Abrir mi agente**. Los componentes desmarcados no se instalan; la elección se recuerda. Si desmarcas un componente ya instalado, deja de usarse pero no se desinstala automáticamente.
 

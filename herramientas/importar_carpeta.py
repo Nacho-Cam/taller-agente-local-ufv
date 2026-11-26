@@ -5,8 +5,11 @@ import os
 import re
 import shutil
 import stat
+import sys
 import uuid
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 EXCLUIDOS = {'.git', '.obsidian', '.venv', 'venv', 'node_modules', '.tools', '.local', '__pycache__'}
 MAX_TEXTO = 200_000
@@ -225,7 +228,17 @@ def importar(origen, boveda, progreso=None):
                f'{textos_generados} notas de texto creadas; {len(sin_texto)} PDF sin texto; '
                f'{len(errores)} errores de extracción; {len(plan["omitidos"])} entradas omitidas. '
                'Los originales permanecen en su carpeta. No se aplica OCR; DOCX, PPTX y hojas de cálculo se conservan como adjuntos.')
+    # La copia ya está confirmada. Un fallo de organización no debe borrar
+    # documentos importados; el próximo arranque puede reintentar la migración.
+    try:
+        from herramientas.organizar_importacion import organizar
+        organizacion = organizar(boveda, destino)
+        resumen += ' ' + organizacion['resumen']
+    except Exception as exc:
+        organizacion = {'error': type(exc).__name__}
+        resumen += ' La copia está guardada; queda pendiente organizarla en Carrera.'
     return {**plan, 'destino': str(destino), 'textos_generados': textos_generados,
+            'organizacion': organizacion,
             'archivos_copiados': archivos_copiados, 'bytes_copiados': bytes_copiados,
             'errores_lectura': errores_lectura, 'manifiesto': str(destino / manifiesto),
             'pdf_sin_texto': sin_texto, 'errores_extraccion': errores,

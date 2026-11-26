@@ -17,7 +17,7 @@ ejecuta para el usuario actual.
 2. Ejecuta `preparar.ps1`, el mismo arranque que contiene el repositorio.
 3. Pregunta si quieres **OpenCode Desktop** o **solo terminal**. Prepara Python,
    instala Obsidian 1.15.1 en el usuario y prepara Ollama, la CLI de OpenCode,
-   LFM3 y el perfil de hardware. Reutiliza Obsidian si ya existe.
+   Qwen3 4B Instruct y el perfil de hardware. Reutiliza Obsidian si ya existe.
 4. Comprueba inferencia, herramientas y una lectura real de los apuntes desde OpenCode.
 5. Registra la bóveda del taller y abre Obsidian en `Inicio.md`, junto al tutor.
    No requiere elegir carpeta. Si Obsidian ya está abierto al registrar una bóveda

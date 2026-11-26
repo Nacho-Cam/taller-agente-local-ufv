@@ -1,7 +1,7 @@
 # Entorno automático y OpenCode
 
-La versión 0.2 añade un arranque guiado: Python gestionado por uv, Ollama portable,
-LFM3 1.7B, OpenCode 2 en modo terminal mínimo y configuración según el equipo.
+El arranque prepara Python gestionado por uv, Ollama portable,
+Qwen3 4B Instruct, OpenCode 2 y una configuración según el equipo.
 La primera ejecución necesita internet y varios GB libres; las posteriores reutilizan
 las descargas y el modelo. Los instaladores del proyecto verifican los checksums
 publicados por los distribuidores. No instalan controladores de GPU.
@@ -60,7 +60,7 @@ La primera preparación pregunta si instalar y usar **OpenCode Desktop** o usar
 Desktop y `--ui no` conserva el recorrido de terminal sin instalar ni abrir la app.
 La CLI de OpenCode sigue siendo necesaria para validar el modelo en ambos casos.
 Desktop recibe un enlace al proyecto configurado con el agente `tutor`, el modelo
-LFM3 y el endpoint de Ollama del taller. No modifica la configuración global de proveedores.
+Qwen y el endpoint de Ollama del taller. No modifica la configuración global de proveedores.
 La instalación Desktop está validada en Windows; macOS/Linux requieren prueba física.
 
 Obsidian 1.15.1 se instala por defecto: instalación de usuario en Windows,
@@ -75,14 +75,15 @@ Los nuevos recorridos macOS/Linux requieren prueba física; aquí se valida Wind
 
 | Hardware detectado | Propuesta inicial |
 |---|---|
-| NVIDIA con al menos 6 GB utilizables | Hasta 3 agentes; contexto 16K. |
-| NVIDIA con 4–6 GB utilizables | Hasta 2 agentes; contexto 16K. |
-| NVIDIA con 2,5–4 GB utilizables | 1 agente; contexto 8K. |
-| Apple Silicon, RAM total de 24 GB o más | Hasta 3 agentes; contexto 16K. |
-| Apple Silicon, RAM total de 16 GB | Hasta 2 agentes; contexto 16K. |
+| NVIDIA con al menos 11 GB utilizables | Hasta 3 agentes; contexto 8K. |
+| NVIDIA con 6–11 GB utilizables | Hasta 2 agentes; contexto 8K. |
+| NVIDIA con 2,5–6 GB utilizables | 1 agente; contexto 8K; puede repartir capas con CPU. |
+| Apple Silicon, RAM total de 32 GB o más | Hasta 3 agentes; contexto 8K. |
+| Apple Silicon, RAM total de 24 GB | Hasta 2 agentes; contexto 8K. |
+| Apple Silicon, RAM total de 16 GB | 1 agente; contexto 8K. |
 | CPU, GPU sin verificar o poca RAM disponible | 1 agente; contexto pequeño. |
 
-Son heurísticas para **LFM3 1.7B Q4**, no límites universales para cualquier modelo.
+Son heurísticas conservadoras para **Qwen3 4B Q4**, no límites universales para cualquier modelo.
 En NVIDIA se usa la memoria libre actual y se reserva al menos 1 GB de la VRAM total.
 En Apple Silicon la memoria es compartida; no se suma a la RAM como si fuera independiente.
 Con menos de 4 GB de RAM disponible se propone un único agente y contexto 4K.

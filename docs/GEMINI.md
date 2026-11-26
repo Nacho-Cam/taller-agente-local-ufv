@@ -1,6 +1,6 @@
 # Gemini y la cuenta de la universidad
 
-Gemini es opcional. La instalación local funciona con Ollama y LFM3 sin cuenta de Google ni conexión permanente a Internet.
+Gemini es opcional. La instalación local funciona con Ollama y Qwen3 4B Instruct sin cuenta de Google ni conexión permanente a Internet.
 
 ## Qué se conecta
 

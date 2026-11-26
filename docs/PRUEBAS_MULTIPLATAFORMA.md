@@ -23,7 +23,7 @@ En Windows también se descargó el EXE publicado y se instaló en la carpeta de
 4. Construye un instalador con PyInstaller en cada sistema y repite la prueba de interfaz desde ese ejecutable.
 5. Conserva los instaladores como artefactos durante 14 días. Un fallo en una plataforma no cancela las demás; cada resultado se puede revisar por separado.
 
-La ejecución manual ofrece **`instalacion_completa`**. Si se activa, también ejecuta los lanzadores reales, descarga Ollama, LFM3, OpenCode CLI/Desktop y Obsidian, verifica MCP y pide una respuesta al modelo. Omite la calibración larga y no abre el chat de las aplicaciones de terceros. Las ejecuciones habituales de cada cambio omiten esta descarga completa.
+La ejecución manual ofrece **`instalacion_completa`**. Si se activa, también ejecuta los lanzadores reales, descarga Ollama, Qwen3 4B Instruct, OpenCode CLI/Desktop y Obsidian, verifica MCP y pide una respuesta al modelo. Omite la calibración larga y no abre el chat de las aplicaciones de terceros. Las ejecuciones habituales de cada cambio omiten esta descarga completa.
 
 El ZIP del repositorio se crea **una sola vez** y se comparte entre los cuatro trabajos. Cada instalador incorpora el SHA256 de ese mismo archivo. Al preparar una versión hay que publicar ese ZIP canónico junto con sus instaladores: regenerarlo después puede cambiar su hash aunque el contenido sea equivalente.
 

@@ -36,7 +36,7 @@ No rellenar empresa, responsabilidades ni logros sin tus datos.
 ## Antes del jueves
 
 - Enviar `PREPARACION.md` a Álvaro para que los alumnos ejecuten el arranque automático
-  antes de clase. Prepara Python, Ollama, LFM3 y OpenCode. Confirmar curso, número de alumnos y horario del taller.
+  antes de clase. Prepara Python, Ollama, Qwen3 4B Instruct y OpenCode. Confirmar curso, número de alumnos y horario del taller.
 - Ejecutar `--doctor` y los cinco casos del ensayo en TU portátil, con los mismos
   archivos que recibirán los alumnos. Cronometrar la primera respuesta y una en caliente.
 - Preguntar por proyector/adaptador, enchufes y wifi. Llevar cargador.

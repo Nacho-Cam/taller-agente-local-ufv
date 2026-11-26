@@ -5,6 +5,16 @@ El arranque prepara las dependencias y conecta las herramientas automáticamente
 Obsidian muestra las mismas carpetas y un panel `Carrera.md`, actualizado tras cada operación.
 No trae un plan de estudios inventado: añade tus cursos y asignaturas reales desde el chat.
 
+Al importar una carpeta desde el instalador, las carpetas `Curso 1` a `Curso 6`
+(también `Primero`, `Segundo`, etc.) y sus subcarpetas se vinculan automáticamente
+como cursos y asignaturas. Los documentos quedan como apuntes con un enlace al
+adjunto conservado. No necesitas hacer otra importación desde el chat.
+
+`Carrera.md` reúne también los documentos generales y los pendientes de clasificar.
+El tutor puede buscarlos sin filtro de curso. La carpeta `memoria` guarda objetivos,
+preferencias y contexto que pidas recordar; los apuntes permanecen en la biblioteca.
+Las importaciones de versiones anteriores se vinculan al volver a abrir el taller.
+
 ## Una sesión de principio a fin
 
 1. «Crea el curso 2026-2027 tercero y la asignatura Automatización».

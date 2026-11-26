@@ -7,6 +7,8 @@ una función de Python para calcular el OEE de una línea ficticia.
 El tutor también gestiona la carrera: crea cursos y asignaturas, organiza temas,
 apuntes, tareas y exámenes, importa PDFs con texto y muestra lo pendiente por fecha.
 Los cambios aparecen en Obsidian en `Carrera.md`. [Uso académico y herramientas](docs/CARRERA.md).
+La importación vincula las carpetas de cursos y mantiene una biblioteca general.
+[Pruebas reales de los 14 recorridos](docs/PRUEBAS_ACADEMICAS.md).
 
 **Ollama + Python + archivos Markdown**, con OpenCode Desktop o terminal a elegir.
 Sin claves API ni Docker. Obsidian se incluye para ver y editar las notas. La práctica no se conecta a Canvas.
@@ -29,7 +31,7 @@ También puedes descargar el ZIP y extraerlo completo:
 - **macOS/Linux:** abre una terminal en la carpeta y ejecuta `bash iniciar.sh`.
 
 La primera ejecución desde el ZIP prepara Python, instala Obsidian en tu usuario y Ollama y OpenCode en el proyecto si
-hacen falta, descarga **LFM3 1.7B**, detecta memoria/GPU y prueba la concurrencia.
+hacen falta, descarga **Qwen3 4B Instruct**, detecta memoria/GPU y prueba la concurrencia.
 Pregunta si quieres **instalar y usar la aplicación de escritorio de OpenCode** o
 **usar solo la terminal**. Guarda esa elección en `.local/interfaz.json`.
 Después abre Obsidian directamente en `boveda/Inicio.md` y el tutor en OpenCode.

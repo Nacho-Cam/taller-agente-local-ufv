@@ -3,6 +3,7 @@ import ctypes
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -62,6 +63,20 @@ def detectar():
                                  'libre_mb': int(float(partes[3])), 'driver': partes[4], 'tipo': 'nvidia'})
                 except ValueError:
                     continue
+        # Algunas versiones de nvidia-smi no admiten compute_cap. Consultarlo
+        # aparte conserva la detección de memoria y GPU en esos equipos.
+        capacidades = comando([nvidia, '--query-gpu=index,compute_cap', '--format=csv,noheader,nounits'])
+        por_indice = {gpu['indice']: gpu for gpu in gpus}
+        for linea in capacidades.splitlines():
+            partes = [p.strip() for p in linea.split(',')]
+            if len(partes) != 2:
+                continue
+            try:
+                indice, capacidad = int(partes[0]), float(partes[1])
+            except ValueError:
+                continue
+            if indice in por_indice and 0 < capacidad < 100:
+                por_indice[indice]['compute_capability'] = capacidad
     if sistema == 'Darwin' and arquitectura in ('arm64', 'aarch64'):
         gpus.append({'nombre': 'Apple Silicon / Metal (memoria unificada)', 'tipo': 'metal'})
     if not gpus and sistema == 'Windows':
@@ -76,30 +91,58 @@ def detectar():
 def perfil(hardware):
     avisos = []
     nvidia = sorted((g for g in hardware['gpu'] if g['tipo'] == 'nvidia'), key=lambda g: g['libre_mb'], reverse=True)
-    acelerador, agentes, contexto = 'cpu', 1, 4096
+    acelerador, agentes, contexto = 'cpu', 1, 8192
     if nvidia:
         gpu = nvidia[0]
         libres = min(gpu['libre_mb'] + gpu.get('reclamable_taller_mb', 0), gpu['vram_mb'] - 1024)
         if libres >= 2500:
             acelerador = 'nvidia'
-            agentes = 3 if libres >= 6000 else 2 if libres >= 4000 else 1
-            contexto = 16384 if libres >= 4000 else 8192
+            agentes = 3 if libres >= 11000 else 2 if libres >= 6000 else 1
+            contexto = 8192
         else:
             avisos.append('La GPU tiene poco margen libre; se propone un solo agente en CPU.')
     elif any(g['tipo'] == 'metal' for g in hardware['gpu']):
         acelerador = 'metal'
-        agentes = 3 if hardware['ram_gb'] >= 24 else 2 if hardware['ram_gb'] >= 16 else 1
-        contexto = 16384 if hardware['ram_gb'] >= 16 else 8192
+        agentes = 3 if hardware['ram_gb'] >= 32 else 2 if hardware['ram_gb'] >= 24 else 1
+        contexto = 8192
     else:
         avisos.append('No se ha verificado aceleración NVIDIA/Metal. Perfil CPU conservador; AMD e Intel requieren comprobar el backend.')
     if hardware['ram_disponible_gb'] < 4:
         agentes, contexto = 1, 4096
         avisos.append('Queda poca RAM disponible. Cierra aplicaciones y vuelve a preparar el entorno.')
-    return {'version': 2, 'modelo': LFM, 'modelo_respaldo': RESPALDO, 'acelerador': acelerador,
+    return {'version': 3, 'modelo': RESPALDO, 'modelo_respaldo': LFM, 'acelerador': acelerador,
             'max_agentes': agentes, 'contexto': contexto, 'salida_tokens': 700,
             'timeout_segundos': 180, 'url': 'http://127.0.0.1:11435',
             'calibrado': False, 'hardware': hardware, 'avisos': avisos,
             'gpu_indice': nvidia[0]['indice'] if nvidia and acelerador == 'nvidia' else None}
+
+
+def biblioteca_cuda(config):
+    """Selecciona CUDA 12 para NVIDIA anteriores a Ampere en Windows.
+
+    El backend CUDA 13 puede fallar durante conversaciones largas en estas
+    tarjetas. No se fuerza una biblioteca en otros sistemas ni en GPU modernas.
+    """
+    hardware = config.get('hardware', {})
+    if hardware.get('sistema') != 'Windows' or config.get('acelerador') != 'nvidia':
+        return None
+    gpu = next((gpu for gpu in hardware.get('gpu', [])
+                if gpu.get('tipo') == 'nvidia' and gpu.get('indice') == config.get('gpu_indice')), None)
+    if gpu is None:
+        return None
+    capacidad = gpu.get('compute_capability')
+    if capacidad is not None:
+        try:
+            valor = float(capacidad)
+        except (ValueError, TypeError):
+            valor = 0
+        if 0 < valor < 100:
+            return 'cuda_v12' if valor < 8.0 else None
+    # Respaldo limitado a familias inequívocas cuando el controlador no informa
+    # de la capacidad. Evita inferir que una tarjeta desconocida es antigua.
+    if re.search(r'\b(?:RTX\s*20\d{2}|GTX\s*(?:10|16)\d{2})\b', gpu.get('nombre', ''), re.IGNORECASE):
+        return 'cuda_v12'
+    return None
 
 
 def guardar(configuracion):

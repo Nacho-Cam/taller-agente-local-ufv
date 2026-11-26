@@ -128,7 +128,7 @@ class Instalador:
         componentes = ttk.LabelFrame(configuracion, text='Qué quieres preparar', padding=(16, 10))
         componentes.grid(row=0, sticky='ew')
         componentes.columnconfigure(0, weight=1)
-        ttk.Label(componentes, text='Base incluida: Python, Ollama, modelo LFM3 y herramientas académicas.', wraplength=660).grid(row=0, sticky='w', pady=(0, 8))
+        ttk.Label(componentes, text='Base incluida: Python, Ollama, modelo Qwen 4B y herramientas académicas.', wraplength=660).grid(row=0, sticky='w', pady=(0, 8))
         filas = [
             ('escritorio', 'OpenCode Desktop', 'Habla con tu agente desde una aplicación. Requiere OpenCode CLI.'),
             ('obsidian', 'Obsidian', 'Abre tus apuntes y organiza tu carrera. La bóveda queda preconfigurada.'),

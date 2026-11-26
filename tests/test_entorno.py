@@ -21,6 +21,63 @@ def hardware(tipo='nvidia', vram=8192, libre=7600, ram=16, disponible=10):
 
 
 class Perfiles(unittest.TestCase):
+    def test_cuda_12_para_turing_y_pascal_windows_con_y_sin_capacidad(self):
+        for nombre, capacidad in (('NVIDIA GeForce RTX 2060', 7.5),
+                                  ('NVIDIA GeForce RTX 2060', None),
+                                  ('NVIDIA GeForce RTX 2080 Ti', None),
+                                  ('NVIDIA GeForce GTX 1660 SUPER', None),
+                                  ('NVIDIA GeForce GTX 1080', None)):
+            with self.subTest(nombre=nombre, capacidad=capacidad):
+                h = hardware()
+                h['gpu'][0]['nombre'] = nombre
+                if capacidad is not None:
+                    h['gpu'][0]['compute_capability'] = capacidad
+                self.assertEqual(entorno_local.biblioteca_cuda(entorno_local.perfil(h)), 'cuda_v12')
+
+    def test_no_fuerza_cuda_12_en_gpu_moderna_otros_sistemas_o_cpu(self):
+        casos = [('Windows', 'nvidia', 'NVIDIA GeForce RTX 5060 Laptop GPU', 12.0),
+                 ('Windows', 'nvidia', 'NVIDIA GeForce RTX 3060', 8.6),
+                 ('Windows', 'nvidia', 'GPU desconocida', None),
+                 ('Linux', 'nvidia', 'NVIDIA GeForce RTX 2060', 7.5),
+                 ('Darwin', 'metal', 'Apple Silicon', None)]
+        for sistema, tipo, nombre, capacidad in casos:
+            with self.subTest(sistema=sistema, nombre=nombre):
+                h = hardware(tipo=tipo)
+                h['sistema'] = sistema
+                h['gpu'][0].update(nombre=nombre, compute_capability=capacidad)
+                self.assertIsNone(entorno_local.biblioteca_cuda(entorno_local.perfil(h)))
+        h = hardware(libre=1000)
+        h['gpu'][0].update(nombre='NVIDIA GeForce RTX 2060', compute_capability=7.5)
+        self.assertIsNone(entorno_local.biblioteca_cuda(entorno_local.perfil(h)))
+
+    def test_biblioteca_cuda_usa_solo_la_gpu_elegida(self):
+        h = hardware()
+        h['gpu'][0].update(nombre='RTX 2060', compute_capability=7.5)
+        h['gpu'].append(dict(h['gpu'][0], indice=1, nombre='RTX 5060', compute_capability=12.0))
+        p = entorno_local.perfil(h)
+        p['gpu_indice'] = 1
+        self.assertIsNone(entorno_local.biblioteca_cuda(p))
+        p['gpu_indice'] = 0
+        self.assertEqual(entorno_local.biblioteca_cuda(p), 'cuda_v12')
+
+    def test_detectar_capacidad_por_indice_sin_perder_gpu_si_consulta_no_admitida(self):
+        datos = '2, NVIDIA GeForce RTX 2060, 6144, 5900, 591.44\n0, NVIDIA GeForce RTX 5060, 8192, 7600, 591.44'
+        for capacidades in ('0, 12.0\n2, 7.5', '', '2, [N/A]\n0, no disponible'):
+            with self.subTest(capacidades=capacidades):
+                with patch.object(entorno_local.platform, 'system', return_value='Linux'), \
+                        patch.object(entorno_local.shutil, 'which', return_value='/usr/bin/nvidia-smi'), \
+                        patch.object(entorno_local, 'comando', side_effect=[datos, capacidades]) as consulta:
+                    h = entorno_local.detectar()
+                self.assertEqual(len(h['gpu']), 2)
+                self.assertEqual(h['gpu'][0]['vram_mb'], 6144)
+                self.assertIn('--query-gpu=index,name,memory.total,memory.free,driver_version', consulta.call_args_list[0].args[0])
+                self.assertIn('--query-gpu=index,compute_cap', consulta.call_args_list[1].args[0])
+                if capacidades.startswith('0, 12.0'):
+                    self.assertEqual(h['gpu'][0]['compute_capability'], 7.5)
+                    self.assertEqual(h['gpu'][1]['compute_capability'], 12.0)
+                else:
+                    self.assertNotIn('compute_capability', h['gpu'][0])
+
     def test_opencode_abre_materiales_y_mcp_preconfigurados_sin_cambiar_readme(self):
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)
@@ -50,24 +107,25 @@ class Perfiles(unittest.TestCase):
             self.assertEqual(json.loads((raiz / '.local/opencode-original.json').read_text()), original)
             self.assertEqual(json.loads((raiz / 'opencode.json').read_text())['username'], 'alumno')
 
-    def test_5060_16gb_propone_tres_y_contexto_limitado(self):
+    def test_5060_16gb_propone_dos_y_contexto_limitado(self):
         p = entorno_local.perfil(hardware())
-        self.assertEqual(p['max_agentes'], 3)
-        self.assertEqual(p['contexto'], 16384)
+        self.assertEqual(p['max_agentes'], 2)
+        self.assertEqual(p['contexto'], 8192)
+        self.assertEqual(p['modelo'], 'qwen3:4b-instruct')
         self.assertFalse(p['calibrado'])
 
     def test_gpu_ocupada_no_se_confunde_con_vram_total(self):
         p = entorno_local.perfil(hardware(libre=1800))
         self.assertEqual((p['max_agentes'], p['acelerador']), (1, 'cpu'))
 
-    def test_2060_6gb_propone_dos(self):
+    def test_2060_6gb_propone_uno(self):
         p = entorno_local.perfil(hardware(vram=6144, libre=5900))
-        self.assertEqual(p['max_agentes'], 2)
+        self.assertEqual(p['max_agentes'], 1)
 
     def test_el_modelo_del_taller_no_reduce_el_perfil_al_repetir(self):
         h = hardware(vram=6144, libre=3500)
         h['gpu'][0]['reclamable_taller_mb'] = 1400
-        self.assertEqual(entorno_local.perfil(h)['max_agentes'], 2)
+        self.assertEqual(entorno_local.perfil(h)['max_agentes'], 1)
 
     def test_cpu_amd_desconocida_y_ram_escasa(self):
         for h in (hardware(tipo=None), hardware(tipo='sin_verificar'), hardware(disponible=2)):
@@ -75,7 +133,7 @@ class Perfiles(unittest.TestCase):
 
     def test_apple_silicon_usa_ram_compartida(self):
         p = entorno_local.perfil(hardware(tipo='metal', ram=16))
-        self.assertEqual((p['max_agentes'], p['acelerador']), (2, 'metal'))
+        self.assertEqual((p['max_agentes'], p['acelerador']), (1, 'metal'))
 
     def test_rechaza_endpoint_externo_y_limites_fuera_de_rango(self):
         with tempfile.TemporaryDirectory() as temporal:
@@ -98,7 +156,7 @@ class Perfiles(unittest.TestCase):
             self.assertFalse((raiz / 'fuera.txt').exists())
 
     def test_calibracion_reduce_a_ultimo_lote_correcto(self):
-        p = entorno_local.perfil(hardware())
+        p = entorno_local.perfil(hardware(vram=16384, libre=15000))
         cerrojo = threading.Lock()
         estado = {'activas': 0}
 
