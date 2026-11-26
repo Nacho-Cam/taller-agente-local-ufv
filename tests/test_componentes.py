@@ -27,7 +27,7 @@ class Componentes(unittest.TestCase):
                     marcador = tools / 'ollama' / entorno.OLLAMA_VERSION / 'ejecutable.txt'
                     marcador.parent.mkdir(parents=True)
                     marcador.write_text('ollama')
-                with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz), patch.object(entorno, 'TOOLS', tools), patch.object(entorno.entorno, 'AJUSTES', ajustes), patch.object(entorno.entorno, 'detectar', return_value={}), patch.object(entorno.entorno, 'perfil', return_value={}), patch.object(entorno.shutil, 'disk_usage', return_value=argparse.Namespace(free=libre * 1024**3)), patch.object(entorno, 'instalar_ollama', side_effect=RuntimeError('continuar')), patch('builtins.print'):
+                with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz), patch.object(entorno, 'TOOLS', tools), patch.object(entorno.entorno, 'AJUSTES', ajustes), patch.object(entorno.entorno, 'detectar', return_value={}), patch.object(entorno.entorno, 'perfil', return_value={'hardware': {}}), patch.object(entorno.shutil, 'disk_usage', return_value=argparse.Namespace(free=libre * 1024**3)), patch.object(entorno, 'instalar_ollama', side_effect=RuntimeError('continuar')), patch('builtins.print'):
                     with self.assertRaisesRegex(RuntimeError, mensaje):
                         entorno.preparar(argumentos(sin_obsidian=True))
 
