@@ -14,7 +14,7 @@ class OrganizarImportacion(unittest.TestCase):
     def setUp(self):
         self.temporal = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporal.cleanup)
-        self.base = Path(self.temporal.name)
+        self.base = Path(self.temporal.name).resolve()
         self.boveda = self.base / 'boveda'
         self.importacion = self.boveda / 'apuntes' / 'Importados' / 'Universidad-123'
         self.importacion.mkdir(parents=True)
@@ -81,6 +81,13 @@ class OrganizarImportacion(unittest.TestCase):
         with self.assertRaises(ValueError):
             organizar(self.boveda, originales)
         self.assertEqual(list(originales.iterdir()), [])
+
+    def test_acepta_la_raiz_original_antes_de_normalizar_alias_del_sistema(self):
+        self.archivo('Curso 2/Control/presion.md', 'P77')
+        entrada = Path(self.temporal.name) / 'boveda'
+        resultado = organizar(entrada, entrada / 'apuntes/Importados/Universidad-123')
+        self.assertEqual(resultado['notas_creadas'], 1)
+        self.assertEqual(len(self.gestor.listar_carrera('segundo', 'Control')['cursos'][0]['asignaturas'][0]['materiales']), 1)
 
     def test_alumno_importa_y_consulta_sin_organizacion_manual(self):
         from herramientas.importar_carpeta import importar
