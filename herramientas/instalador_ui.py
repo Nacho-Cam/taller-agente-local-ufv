@@ -105,12 +105,27 @@ class Instalador:
         principal = ttk.Frame(ventana, padding=26)
         principal.pack(fill='both', expand=True)
         principal.columnconfigure(0, weight=1)
-        principal.rowconfigure(9, weight=1)
+        principal.rowconfigure(2, weight=1)
+        principal.rowconfigure(9, minsize=80)
         ttk.Label(principal, text='Tu agente de la uni', style='Titulo.TLabel').grid(row=0, sticky='w')
         ttk.Label(principal, text='Apuntes, asignaturas, tareas y exámenes en tu ordenador.').grid(row=1, sticky='w', pady=(7, 22))
 
-        componentes = ttk.LabelFrame(principal, text='Qué quieres preparar', padding=(16, 10))
-        componentes.grid(row=2, sticky='ew')
+        zona = ttk.Frame(principal)
+        zona.grid(row=2, sticky='nsew')
+        zona.columnconfigure(0, weight=1)
+        zona.rowconfigure(0, weight=1)
+        self.lienzo = tk.Canvas(zona, height=365, highlightthickness=0, borderwidth=0)
+        self.lienzo.grid(row=0, column=0, sticky='nsew')
+        scroll_opciones = ttk.Scrollbar(zona, orient='vertical', command=self.lienzo.yview)
+        scroll_opciones.grid(row=0, column=1, sticky='ns')
+        self.lienzo.configure(yscrollcommand=scroll_opciones.set)
+        configuracion = ttk.Frame(self.lienzo)
+        configuracion.columnconfigure(0, weight=1)
+        panel = self.lienzo.create_window(0, 0, window=configuracion, anchor='nw')
+        configuracion.bind('<Configure>', lambda _: self.lienzo.configure(scrollregion=self.lienzo.bbox('all')))
+        self.lienzo.bind('<Configure>', lambda e: self.lienzo.itemconfigure(panel, width=e.width))
+        componentes = ttk.LabelFrame(configuracion, text='Qué quieres preparar', padding=(16, 10))
+        componentes.grid(row=0, sticky='ew')
         componentes.columnconfigure(0, weight=1)
         ttk.Label(componentes, text='Base incluida: Python, Ollama, modelo LFM3 y herramientas académicas.', wraplength=660).grid(row=0, sticky='w', pady=(0, 8))
         filas = [
@@ -126,9 +141,9 @@ class Instalador:
             ttk.Label(componentes, text=detalle, wraplength=640).grid(row=i * 2 + 2, sticky='w', padx=(24, 0), pady=(0, 5))
             self.controles.append(boton)
 
-        ttk.Label(principal, text='Dónde se guardará', style='Seccion.TLabel').grid(row=3, sticky='w', pady=(19, 6))
-        carpeta = ttk.Frame(principal)
-        carpeta.grid(row=4, sticky='ew')
+        ttk.Label(configuracion, text='Dónde se guardará', style='Seccion.TLabel').grid(row=1, sticky='w', pady=(19, 6))
+        carpeta = ttk.Frame(configuracion)
+        carpeta.grid(row=2, sticky='ew')
         carpeta.columnconfigure(0, weight=1)
         entrada = ttk.Entry(carpeta, textvariable=self.destino)
         entrada.grid(row=0, column=0, sticky='ew', padx=(0, 8))
@@ -137,9 +152,10 @@ class Instalador:
         cambiar = ttk.Button(carpeta, text='Cambiar carpeta…', command=self.elegir_carpeta)
         cambiar.grid(row=0, column=1)
         self.controles.extend([entrada, cambiar])
-        ttk.Label(principal, text='Tus asignaturas y apuntes permanecen en esta carpeta al actualizar.', wraplength=730).grid(row=5, sticky='w', pady=(7, 0))
-        ttk.Label(principal, textvariable=self.resumen, wraplength=730).grid(row=6, sticky='w', pady=(4, 12))
-        ttk.Separator(principal).grid(row=7, sticky='ew')
+        ttk.Label(configuracion, text='Tus asignaturas y apuntes permanecen en esta carpeta al actualizar.', wraplength=680).grid(row=3, sticky='w', pady=(7, 0))
+        ttk.Label(configuracion, textvariable=self.resumen, wraplength=680).grid(row=4, sticky='w', pady=(4, 12))
+        self.enlazar_desplazamiento(configuracion)
+        ttk.Separator(principal).grid(row=7, sticky='ew', pady=(10, 0))
         ttk.Label(principal, textvariable=self.estado, wraplength=720).grid(row=8, sticky='w', pady=(12, 8))
         detalle = ttk.Frame(principal)
         detalle.grid(row=9, sticky='nsew')
@@ -164,7 +180,8 @@ class Instalador:
         self.controles.extend([self.ver_archivos, self.instalar, self.abrir])
         self.destino.trace_add('write', lambda *_: self.actualizar_resumen())
         self.actualizar_resumen()
-        ventana.after(100, self.recibir)
+        self._sondeo = ventana.after(100, self.recibir)
+        ventana.bind('<Destroy>', self.detener_sondeo, add='+')
 
     def actualizar_resumen(self):
         proyecto = Path(self.destino.get()) / CARPETA
@@ -173,6 +190,25 @@ class Instalador:
         self.instalar.configure(text='Aplicar selección / actualizar' if existe else 'Instalar selección')
         self.abrir.configure(state='normal' if existe and not self.ocupado else 'disabled')
         self.ver_archivos.configure(state='normal' if (proyecto / 'boveda').is_dir() and not self.ocupado else 'disabled')
+
+    def enlazar_desplazamiento(self, widget):
+        widget.bind('<MouseWheel>', lambda e: self.lienzo.yview_scroll(-int(e.delta / 120) if abs(e.delta) >= 120 else (-1 if e.delta > 0 else 1), 'units'))
+        widget.bind('<Button-4>', lambda _: self.lienzo.yview_scroll(-1, 'units'))
+        widget.bind('<Button-5>', lambda _: self.lienzo.yview_scroll(1, 'units'))
+        widget.bind('<FocusIn>', self.mostrar_foco, add='+')
+        for hijo in widget.winfo_children():
+            self.enlazar_desplazamiento(hijo)
+
+    def mostrar_foco(self, evento):
+        alto = self.lienzo.bbox('all')[3] if self.lienzo.bbox('all') else 1
+        actual = self.lienzo.canvasy(0)
+        y = evento.widget.winfo_rooty() - self.lienzo.winfo_rooty() + actual
+        final = y + evento.widget.winfo_height()
+        visible = self.lienzo.winfo_height()
+        if y < actual:
+            self.lienzo.yview_moveto(max(0, y - 6) / alto)
+        elif final > actual + visible:
+            self.lienzo.yview_moveto(max(0, final - visible + 6) / alto)
 
     def cambiar_opcion(self, clave):
         if clave == 'escritorio' and self.opciones[clave].get():
@@ -268,16 +304,20 @@ class Instalador:
             if getattr(sys, 'frozen', False):
                 crear_accesos(destino, Path(sys.executable))
             if accion == 'iniciar':
-                if opciones['escritorio']:
+                configuracion = json.loads((local / 'ajustes.json').read_text(encoding='utf-8'))
+                if opciones['escritorio'] and configuracion.get('interfaz') != 'terminal':
                     self.eventos.put(('estado', 'Abriendo tu agente y tus apuntes…'))
                     self.ejecutar(comando_arranque(proyecto, 'iniciar'), proyecto)
                 else:
+                    if opciones['escritorio']:
+                        self.eventos.put(('estado', 'La prueba de OpenCode no terminó correctamente. Abrimos el agente Python en una terminal; consulta el registro para más detalle.'))
                     abrir_terminal(proyecto, None)
             self.eventos.put(('fin', 'Todo preparado. Abre tu agente ahora o vuelve desde el acceso Taller UFV.'))
         except Exception as error:
             self.eventos.put(('error', str(error)))
 
     def recibir(self):
+        self.ventana.after_cancel(self._sondeo)
         try:
             while True:
                 tipo, texto = self.eventos.get_nowait()
@@ -303,7 +343,11 @@ class Instalador:
                             self.escribir(f'No se pudo guardar el registro: {error}')
         except queue.Empty:
             pass
-        self.ventana.after(100, self.recibir)
+        self._sondeo = self.ventana.after(100, self.recibir)
+
+    def detener_sondeo(self, evento):
+        if evento.widget is self.ventana:
+            self.ventana.after_cancel(self._sondeo)
 
     def abrir_archivos(self):
         ruta = str(Path(self.destino.get()) / CARPETA / 'boveda')

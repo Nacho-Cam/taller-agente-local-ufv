@@ -84,7 +84,10 @@ def palabras(texto):
 
 def archivos_md(boveda):
     # Solo dos carpetas conocidas, sin seguir enlaces a carpetas externas.
-    raiz = boveda.resolve()
+    # Canonicaliza los ancestros (por ejemplo /var -> /private/var en macOS)
+    # antes de comparar rutas. Los enlaces dentro de la bóveda siguen vetados.
+    boveda = Path(boveda).resolve()
+    raiz = boveda
     for carpeta in ("apuntes", "memoria"):
         directorio = boveda / carpeta
         if not directorio.is_dir() or directorio.is_symlink():
@@ -123,6 +126,7 @@ def archivos_md(boveda):
 
 
 def buscar_apuntes(consulta, boveda=BOVEDA, curso='', asignatura=''):
+    boveda = Path(boveda).resolve()
     if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 300:
         raise ValueError("La consulta debe contener entre 1 y 300 caracteres.")
     terminos = palabras(consulta)

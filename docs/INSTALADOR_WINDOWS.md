@@ -1,5 +1,9 @@
 # Instalador EXE de Windows
 
+**Desde la versión 0.7 el EXE tiene interfaz gráfica y guarda la instalación en una carpeta estable. Consulta [Instalación y actualizaciones](INSTALACION.md) para la versión actual.**
+
+El resto de este documento describe el arranque de consola de las versiones 0.6 y anteriores, conservado en `herramientas/instalador_windows.py`. Sus indicadores no se aplican al instalador gráfico actual.
+
 Descarga `Instalar-Taller-UFV.exe` desde la versión publicada del repositorio.
 Es un ejecutable del taller que muestra una consola con el progreso. Lleva el
 arranque Python empaquetado; obtiene los demás programas de sus distribuidores.

@@ -99,6 +99,15 @@ class FlujoInstalador(unittest.TestCase):
         terminal.assert_called_once_with(proyecto, None)
         self.assertEqual(eventos[-1][0], 'fin', eventos)
 
+    def test_fallo_prueba_opencode_abre_fallback_en_terminal_visible(self):
+        proyecto = self.instalado()
+        (proyecto / '.local/ajustes.json').write_text(json.dumps({'interfaz': 'terminal'}))
+        ejecutar, descargar, terminal, eventos = self.ejecutar_flujo(OPCIONES, 'iniciar')
+        ejecutar.assert_not_called()
+        descargar.assert_not_called()
+        terminal.assert_called_once_with(proyecto, None)
+        self.assertTrue(any(t == 'estado' and 'terminal' in m for t, m in eventos))
+
     def test_error_no_finaliza_como_exito_y_reintento_reusa_archivos(self):
         self.instalado()
         self.app.ejecutar = Mock(side_effect=RuntimeError('Disco lleno'))
@@ -169,6 +178,15 @@ class InteraccionTk(unittest.TestCase):
         self.app.opciones['escritorio'].set(True)
         self.app.cambiar_opcion('escritorio')
         self.assertTrue(self.app.opciones['opencode'].get())
+
+    def test_pantalla_portatil_conserva_registro_y_botones_visibles(self):
+        self.raiz.deiconify()
+        self.raiz.geometry('800x658')
+        self.raiz.update()
+        self.assertGreaterEqual(self.app.log.winfo_height(), 65)
+        self.assertLessEqual(self.app.abrir.winfo_rooty() + self.app.abrir.winfo_height(),
+                             self.raiz.winfo_rooty() + self.raiz.winfo_height())
+        self.assertGreater(self.app.lienzo.bbox('all')[3], self.app.lienzo.winfo_height())
 
     def test_error_permite_reintentar_y_libera_controles(self):
         self.app.ocupado = True

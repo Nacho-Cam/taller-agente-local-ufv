@@ -60,6 +60,32 @@ class Carrera(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.a.restaurar_asignatura(self.c, self.s)
 
+    def test_busqueda_con_ancestro_alias_conserva_limites_de_boveda(self):
+        datos = self.raiz / 'datos'
+        datos.mkdir()
+        alias = self.raiz / 'alias-datos'
+        try:
+            alias.symlink_to(datos, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest('El equipo no permite crear enlaces simbólicos de prueba.')
+        boveda = alias / 'boveda'
+        academia = Academia(boveda)
+        curso = academia.crear_curso('2026-2027')['id']
+        asignatura = academia.crear_asignatura(curso, 'Control')['id']
+        material = academia.anadir_material(curso, asignatura, 'tema', 'Sensores', 'sensor farolillo')
+        apuntes = boveda / 'apuntes'
+        apuntes.mkdir()
+        (apuntes / 'lectura.md').write_text('sensor farolillo', encoding='utf-8')
+        resultados = nucleo.buscar_apuntes('farolillo', boveda)['resultados']
+        self.assertEqual({r['fuente'] for r in resultados}, {material['archivo'], 'apuntes/lectura.md'})
+        filtrados = nucleo.buscar_apuntes('farolillo', boveda, curso=curso, asignatura=asignatura)['resultados']
+        self.assertEqual([r['fuente'] for r in filtrados], [material['archivo']])
+        fuera = self.raiz / 'fuera'
+        fuera.mkdir()
+        (fuera / 'secreto.md').write_text('confidencial centinela', encoding='utf-8')
+        (academia.asignatura(curso, asignatura) / 'enlace').symlink_to(fuera, target_is_directory=True)
+        self.assertEqual(nucleo.buscar_apuntes('centinela', boveda)['resultados'], [])
+
     def test_rechaza_escape_de_rutas_fechas_tipos_y_ids(self):
         for nombre in ('../fuera', 'C:\\datos', 'a/b', 'a\nb'):
             with self.assertRaises(ValueError):
