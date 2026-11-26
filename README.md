@@ -19,6 +19,10 @@ La ventana permite elegir OpenCode Desktop, Obsidian, CLI y calibración, cambia
 y seguir el progreso. Guarda la elección y deja un acceso **Taller UFV** en tu usuario.
 No necesitas instalar Python antes. [Instalación, carpetas y actualizaciones](docs/INSTALACION.md).
 
+También puedes preparar la conexión opcional con **Gemini CLI** desde el gestor.
+Usa los mismos apuntes y herramientas de carrera; la cuenta de Google se inicia
+en la aplicación oficial. [Gemini y cuentas universitarias](docs/GEMINI.md).
+
 También puedes descargar el ZIP y extraerlo completo:
 
 - **Windows:** abre `iniciar.cmd`.

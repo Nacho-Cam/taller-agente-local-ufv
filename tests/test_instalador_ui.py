@@ -99,6 +99,19 @@ class FlujoInstalador(unittest.TestCase):
         terminal.assert_called_once_with(proyecto, None)
         self.assertEqual(eventos[-1][0], 'fin', eventos)
 
+    def test_conectar_gemini_prepara_config_sin_abrir_chat_ni_recalibrar(self):
+        proyecto = self.instalado()
+        ejecutar, descargar, terminal, eventos = self.ejecutar_flujo(OPCIONES, 'gemini')
+        descargar.assert_not_called()
+        terminal.assert_not_called()
+        self.assertEqual(ejecutar.call_count, 1)
+        comando = ejecutar.call_args.args[0]
+        self.assertIn(str(proyecto / 'herramientas/conectar_gemini.py'), comando)
+        self.assertEqual(comando[-2:], ['--destino', str(proyecto)])
+        self.assertNotIn('--modelo-local', comando)
+        self.assertEqual(eventos[-1][0], 'fin', eventos)
+        self.assertIn('/mcp', eventos[-1][1])
+
     def test_fallo_prueba_opencode_abre_fallback_en_terminal_visible(self):
         proyecto = self.instalado()
         (proyecto / '.local/ajustes.json').write_text(json.dumps({'interfaz': 'terminal'}))

@@ -8,7 +8,7 @@ import tarfile
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-VERSION = '0.7.0'
+VERSION = '0.7.1'
 
 
 if __name__ == '__main__':

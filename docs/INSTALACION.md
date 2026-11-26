@@ -24,6 +24,8 @@ Python, Ollama, el modelo LFM3 y las herramientas académicas forman la base obl
 
 Pulsa **Instalar selección** y, cuando termine, **Abrir mi agente**. Los componentes desmarcados no se instalan; la elección se recuerda. Si desmarcas un componente ya instalado, deja de usarse pero no se desinstala automáticamente.
 
+Desde 0.7.1 hay una opción adicional **Preparar conexión con Gemini CLI**, disponible tras instalar. Comparte la bóveda y las herramientas académicas con esa aplicación. Necesita una cuenta admitida y Gemini CLI instalado; el acceso educativo a Gemini web no garantiza acceso a la CLI. [Pasos, requisitos y límites de Gemini](GEMINI.md).
+
 ## Dónde queda la aplicación
 
 Puedes cambiar la carpeta antes de instalar. Por defecto:

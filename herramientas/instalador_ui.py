@@ -154,6 +154,10 @@ class Instalador:
         self.controles.extend([entrada, cambiar])
         ttk.Label(configuracion, text='Tus asignaturas y apuntes permanecen en esta carpeta al actualizar.', wraplength=680).grid(row=3, sticky='w', pady=(7, 0))
         ttk.Label(configuracion, textvariable=self.resumen, wraplength=680).grid(row=4, sticky='w', pady=(4, 12))
+        self.gemini = ttk.Button(configuracion, text='Preparar conexión con Gemini CLI', command=lambda: self.iniciar('gemini'))
+        self.gemini.grid(row=5, sticky='w', pady=(6, 5))
+        ttk.Label(configuracion, text='Opcional: usa los apuntes y la agenda desde Gemini CLI. Requiere una cuenta admitida; Canvas sigue sin conectar.', wraplength=680).grid(row=6, sticky='w', pady=(0, 12))
+        self.controles.append(self.gemini)
         self.enlazar_desplazamiento(configuracion)
         ttk.Separator(principal).grid(row=7, sticky='ew', pady=(10, 0))
         ttk.Label(principal, textvariable=self.estado, wraplength=720).grid(row=8, sticky='w', pady=(12, 8))
@@ -190,6 +194,8 @@ class Instalador:
         self.instalar.configure(text='Aplicar selección / actualizar' if existe else 'Instalar selección')
         self.abrir.configure(state='normal' if existe and not self.ocupado else 'disabled')
         self.ver_archivos.configure(state='normal' if (proyecto / 'boveda').is_dir() and not self.ocupado else 'disabled')
+        self.gemini.configure(state='normal' if existe and (proyecto / '.local/ajustes.json').is_file()
+                              and (proyecto / 'herramientas/conectar_gemini.py').is_file() and not self.ocupado else 'disabled')
 
     def enlazar_desplazamiento(self, widget):
         widget.bind('<MouseWheel>', lambda e: self.lienzo.yview_scroll(-int(e.delta / 120) if abs(e.delta) >= 120 else (-1 if e.delta > 0 else 1), 'units'))
@@ -240,7 +246,7 @@ class Instalador:
             return
         try:
             destino = validar_destino(self.destino.get())
-            opciones = {k: v.get() for k, v in self.opciones.items()}
+            opciones = preferencias(destino) if accion == 'gemini' else {k: v.get() for k, v in self.opciones.items()}
             destino.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryFile(dir=destino):
                 pass
@@ -303,6 +309,14 @@ class Instalador:
                 self.ejecutar(comando_arranque(proyecto, 'preparar', seleccion), proyecto)
             if getattr(sys, 'frozen', False):
                 crear_accesos(destino, Path(sys.executable))
+            if accion == 'gemini':
+                uv = proyecto / '.tools/uv' / ('uv.exe' if sys.platform == 'win32' else 'uv')
+                self.eventos.put(('estado', 'Preparando la biblioteca y las herramientas para Gemini CLI…'))
+                self.ejecutar([str(uv), 'run', '--frozen', '--directory', str(proyecto), '--python', '3.11',
+                    '--extra', 'mcp', 'python', str(proyecto / 'herramientas/conectar_gemini.py'),
+                    '--destino', str(proyecto)], proyecto)
+                self.eventos.put(('fin', 'Conexión preparada. Abre una terminal en la carpeta del taller, ejecuta gemini, inicia sesión con Google y comprueba /mcp.'))
+                return
             if accion == 'iniciar':
                 configuracion = json.loads((local / 'ajustes.json').read_text(encoding='utf-8'))
                 if opciones['escritorio'] and configuracion.get('interfaz') != 'terminal':
