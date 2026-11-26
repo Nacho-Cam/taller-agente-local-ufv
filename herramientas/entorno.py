@@ -590,7 +590,7 @@ def main():
             espacio = configurar_opencode(config)
             if ui:
                 from herramientas.opencode_desktop import abrir
-                abrir(config['opencode_desktop_bin'], config['hardware']['sistema'], espacio)
+                abrir(config['opencode_desktop_bin'], config['hardware']['sistema'], espacio, cli=config['opencode_bin'])
                 print('OpenCode Desktop abierto en el proyecto del taller. Modelo local y tutor configurados.')
                 return 0
             ambiente = dict(os.environ, OPENCODE_DB=str(LOCAL / 'opencode.db'))

@@ -2,7 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from herramientas import opencode_desktop as desktop
 from herramientas import entorno, instalador_windows
@@ -34,6 +34,30 @@ class Interfaz(unittest.TestCase):
         self.assertIn('mis%20apuntes', argumentos[1])
         self.assertNotIn('shell', lanzar.call_args.kwargs)
 
+    def test_recarga_servicio_al_instalar_o_actualizar_y_no_al_reabrir(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            (raiz / 'opencode.json').write_text('{}')
+            with patch.object(desktop.subprocess, 'run', return_value=Mock(returncode=0)) as recargar, patch.object(desktop.subprocess, 'Popen'):
+                desktop.abrir('Desktop.exe', 'Linux', raiz, cli='cli')
+                desktop.abrir('Desktop.exe', 'Linux', raiz, cli='cli')
+                self.assertEqual(recargar.call_count, 1)
+                self.assertEqual(recargar.call_args.args[0], ['cli', 'reload'])
+                self.assertEqual(recargar.call_args.kwargs['cwd'], raiz.resolve())
+                (raiz / '.ufv-paquete.json').write_text('{"version":"nueva"}')
+                desktop.abrir('Desktop.exe', 'Linux', raiz, cli='cli')
+                self.assertEqual(recargar.call_count, 2)
+
+    def test_recarga_fallida_no_guarda_sello_ni_abre_desktop_sin_configuracion(self):
+        with tempfile.TemporaryDirectory() as t:
+            raiz = Path(t)
+            (raiz / 'opencode.json').write_text('{}')
+            with patch.object(desktop.subprocess, 'run', return_value=Mock(returncode=1)), patch.object(desktop.subprocess, 'Popen') as abrir:
+                with self.assertRaises(RuntimeError):
+                    desktop.abrir('Desktop.exe', 'Linux', raiz, cli='cli')
+                abrir.assert_not_called()
+                self.assertFalse((raiz / '.local/opencode-desktop-config.sha256').exists())
+
     def test_solo_terminal_no_instala_desktop_y_si_respeta_config(self):
         config = {'hardware': {'sistema': 'Windows'}, 'opencode_bin': 'cli.exe', 'interfaz': 'opencode', 'mcp_validado': True, 'mcp_revision': 2}
         with tempfile.TemporaryDirectory() as t:
@@ -53,7 +77,7 @@ class Interfaz(unittest.TestCase):
             with patch.object(entorno.entorno, 'AJUSTES', ajustes), patch.object(entorno.entorno, 'cargar', return_value=config), patch.object(entorno.entorno, 'guardar'), patch.object(entorno, 'servidor'), patch.object(entorno, 'configurar_opencode', return_value=raiz), patch.object(entorno.subprocess, 'call', side_effect=AssertionError('No abrir terminal')), patch.object(desktop, 'instalar', return_value='Desktop.exe') as instalar, patch.object(desktop, 'abrir') as abrir, patch.object(desktop, 'PREFERENCIAS', raiz / 'ui.json'), patch.object(entorno.sys, 'argv', ['entorno', 'iniciar', '--ui', 'si', '--sin-obsidian']):
                 self.assertEqual(entorno.main(), 0)
                 instalar.assert_called_once()
-                abrir.assert_called_once_with('Desktop.exe', 'Windows', raiz)
+                abrir.assert_called_once_with('Desktop.exe', 'Windows', raiz, cli='cli.exe')
 
 
 if __name__ == '__main__':

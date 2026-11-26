@@ -1,6 +1,6 @@
 [project]
 name = "taller-agente-local-ufv"
-version = "0.8.0"
+version = "0.8.1"
 requires-python = ">=3.11"
 dependencies = [
     "psutil==7.1.3",

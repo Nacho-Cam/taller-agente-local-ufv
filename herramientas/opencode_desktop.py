@@ -1,4 +1,5 @@
 """Elección persistente e instalación opcional de OpenCode Desktop 2."""
+import hashlib
 import json
 import os
 import subprocess
@@ -94,7 +95,31 @@ def instalar(hardware):
     return binario
 
 
-def abrir(binario, sistema, espacio):
+def recargar_configuracion(cli, sistema, espacio):
+    """Invalida la caché del servicio compartido solo al cambiar esta instalación."""
+    espacio = Path(espacio).resolve()
+    contenido = (espacio / 'opencode.json').read_bytes()
+    paquete = espacio / '.ufv-paquete.json'
+    if paquete.is_file():
+        contenido += paquete.read_bytes()
+    revision = hashlib.sha256(contenido).hexdigest()
+    sello = espacio / '.local/opencode-desktop-config.sha256'
+    if sello.is_file() and sello.read_text(encoding='utf-8').strip() == revision:
+        return
+    opciones = {'creationflags': subprocess.CREATE_NO_WINDOW} if sistema == 'Windows' else {}
+    resultado = subprocess.run([str(cli), 'reload'], cwd=espacio, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace',
+        timeout=45, **opciones)
+    if resultado.returncode:
+        raise RuntimeError('OpenCode no pudo recargar la configuración del taller. Vuelve a pulsar Abrir mi agente.')
+    sello.parent.mkdir(parents=True, exist_ok=True)
+    sello.write_text(revision, encoding='utf-8')
+    print('Configuración de OpenCode actualizada: tutor y modelo local.', flush=True)
+
+
+def abrir(binario, sistema, espacio, cli=None):
+    if cli:
+        recargar_configuracion(cli, sistema, espacio)
     # Enlace soportado por Desktop 2: abre el proyecto con su configuración local.
     uri = 'opencode://open-project?directory=' + quote(str(Path(espacio).resolve()), safe='')
     comando = ['open', '-a', binario, uri] if sistema == 'Darwin' else [binario, uri]
