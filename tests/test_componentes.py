@@ -14,6 +14,23 @@ def argumentos(**cambios):
 
 
 class Componentes(unittest.TestCase):
+    def test_reconfigurar_o_retomar_no_exige_espacio_de_primera_descarga(self):
+        for estado, libre, mensaje in [('nuevo', 5, '7 GB'), ('preparado', 5, 'continuar'),
+                                       ('parcial', 5, 'continuar'), ('preparado', 2, '3 GB')]:
+            with self.subTest(estado=estado, libre=libre), tempfile.TemporaryDirectory() as t:
+                raiz = Path(t)
+                ajustes = raiz / 'ajustes.json'
+                tools = raiz / 'tools'
+                if estado == 'preparado':
+                    ajustes.write_text('{}')
+                elif estado == 'parcial':
+                    marcador = tools / 'ollama' / entorno.OLLAMA_VERSION / 'ejecutable.txt'
+                    marcador.parent.mkdir(parents=True)
+                    marcador.write_text('ollama')
+                with patch.object(entorno, 'RAIZ', raiz), patch.object(entorno, 'LOCAL', raiz), patch.object(entorno, 'TOOLS', tools), patch.object(entorno.entorno, 'AJUSTES', ajustes), patch.object(entorno.entorno, 'detectar', return_value={}), patch.object(entorno.entorno, 'perfil', return_value={}), patch.object(entorno.shutil, 'disk_usage', return_value=argparse.Namespace(free=libre * 1024**3)), patch.object(entorno, 'instalar_ollama', side_effect=RuntimeError('continuar')), patch('builtins.print'):
+                    with self.assertRaisesRegex(RuntimeError, mensaje):
+                        entorno.preparar(argumentos(sin_obsidian=True))
+
     def test_guarda_eleccion_y_no_vuelve_a_preguntar_al_reabrir(self):
         with tempfile.TemporaryDirectory() as t:
             raiz = Path(t)

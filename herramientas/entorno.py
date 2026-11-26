@@ -492,8 +492,13 @@ def preparar(args):
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if args.solo_detectar:
         return config
-    if shutil.disk_usage(RAIZ).free < 7 * 1024**3:
-        raise RuntimeError('Se recomiendan al menos 7 GB libres para descargas, extracción y modelo.')
+    # Reconfigurar una instalación preparada no vuelve a necesitar el espacio
+    # de su primera descarga. También permite retomar una preparación parcial
+    # cuando Ollama ya se ha extraído pero aún no se guardaron los ajustes.
+    reutilizable = entorno.AJUSTES.is_file() or (TOOLS / 'ollama' / OLLAMA_VERSION / 'ejecutable.txt').is_file()
+    minimo_gb = 3 if reutilizable else 7
+    if shutil.disk_usage(RAIZ).free < minimo_gb * 1024**3:
+        raise RuntimeError(f'Libera al menos {minimo_gb} GB para preparar los componentes. Tus apuntes se conservan.')
     if not args.sin_obsidian:
         from herramientas.obsidian_local import instalar, registrar_boveda
         config['obsidian_bin'] = instalar(config['hardware'])
