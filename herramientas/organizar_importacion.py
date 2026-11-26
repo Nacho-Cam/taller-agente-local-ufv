@@ -62,10 +62,17 @@ def organizar(boveda, carpeta_importada):
     """
     gestor = Academia(boveda)
     entrada = Path(carpeta_importada).absolute()
-    try:
-        relativa = entrada.relative_to(gestor.raiz)
-    except ValueError as exc:
-        raise ValueError('Solo se organizan copias dentro de apuntes/Importados.') from exc
+    # /var -> /private/var en macOS y nombres 8.3 en Windows pueden representar
+    # la misma raíz con distinto texto. Conserva la ruta relativa antes de que
+    # Academia la valide contra su raíz canónica; no resuelvas enlaces internos.
+    for raiz_entrada in (Path(boveda).absolute(), gestor.raiz):
+        try:
+            relativa = entrada.relative_to(raiz_entrada)
+            break
+        except ValueError:
+            continue
+    else:
+        raise ValueError('Solo se organizan copias dentro de apuntes/Importados.')
     if len(relativa.parts) != 3 or relativa.parts[:2] != ('apuntes', 'Importados'):
         raise ValueError('Elige una carpeta importada directamente dentro de apuntes/Importados.')
     raiz = gestor.ruta(relativa)
