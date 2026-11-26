@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -7,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from herramientas.importar_carpeta import analizar, importar
+from herramientas.importar_carpeta import ErrorLecturaOrigen, analizar, importar
 
 
 def pdf_textual(ruta, texto='El sensor universitario P101 mide presion'):
@@ -126,6 +127,92 @@ class ImportarCarpeta(unittest.TestCase):
             importar(self.origen, self.boveda, interrumpir)
         self.assertEqual(list((self.boveda / 'apuntes' / 'Importados').iterdir()), [])
         self.assertEqual((self.origen / 'nota.md').read_text(encoding='utf-8'), 'sensor')
+
+    def test_lectura_onedrive_falla_tras_copia_parcial_y_continua(self):
+        (self.origen / 'a_nube.md').write_bytes(b'contenido parcialmente disponible')
+        (self.origen / 'b_local.md').write_bytes(b'contenido completamente local')
+        fdopen_original = os.fdopen
+        abiertos = []
+
+        class LectorIncompleto:
+            def __init__(self, entrada):
+                self.entrada = entrada
+                self.lecturas = 0
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.entrada.close()
+
+            def fileno(self):
+                return self.entrada.fileno()
+
+            def read(self, cantidad):
+                self.lecturas += 1
+                if self.lecturas == 1:
+                    return self.entrada.read(3)
+                raise OSError(22, 'Archivo pendiente de descarga')
+
+        def abrir(descriptor, modo):
+            entrada = fdopen_original(descriptor, modo)
+            abiertos.append(entrada)
+            return LectorIncompleto(entrada) if len(abiertos) == 1 else entrada
+
+        progreso = []
+        with patch('herramientas.importar_carpeta.os.fdopen', side_effect=abrir):
+            resultado = importar(self.origen, self.boveda, progreso.append)
+        destino = Path(resultado['destino'])
+        self.assertEqual(resultado['total_archivos'], 2)
+        self.assertEqual(resultado['archivos_copiados'], 1)
+        self.assertFalse((destino / 'a_nube.md').exists())
+        self.assertEqual((destino / 'b_local.md').read_bytes(), b'contenido completamente local')
+        self.assertEqual(resultado['errores_lectura'][0]['archivo'], 'a_nube.md')
+        self.assertEqual(resultado['errores_lectura'][0]['errno'], 22)
+        self.assertIn('OneDrive', resultado['errores_lectura'][0]['motivo'])
+        detalles = json.loads(Path(resultado['manifiesto']).read_text(encoding='utf-8'))
+        self.assertEqual(detalles['archivos_copiados'], 1)
+        self.assertEqual(len(detalles['errores_lectura']), 1)
+        self.assertEqual(Path(resultado['manifiesto']).suffix, '.json')
+        self.assertNotIn('a_nube', '\n'.join(progreso))
+        self.assertIn('Importados 1 de 2', resultado['resumen'])
+
+    def test_escritura_destino_falla_y_revierte_incluso_copias_previas(self):
+        (self.origen / 'a_copiado.md').write_bytes(b'primero')
+        (self.origen / 'b_fallo.md').write_bytes(b'segundo')
+        abrir_original = Path.open
+
+        def abrir(ruta, modo='r', *args, **kwargs):
+            if ruta.name == 'b_fallo.md' and modo == 'xb':
+                raise PermissionError(13, 'Destino sin permiso')
+            return abrir_original(ruta, modo, *args, **kwargs)
+
+        with patch('pathlib.Path.open', new=abrir):
+            with self.assertRaises(PermissionError):
+                importar(self.origen, self.boveda)
+        self.assertEqual(list((self.boveda / 'apuntes' / 'Importados').iterdir()), [])
+        self.assertEqual((self.origen / 'a_copiado.md').read_bytes(), b'primero')
+
+    def test_escritura_texto_extraido_falla_y_revierte(self):
+        (self.origen / 'nota.txt').write_text('Texto extraíble', encoding='utf-8')
+        escribir_original = Path.write_text
+
+        def escribir(ruta, *args, **kwargs):
+            if '.parte-' in ruta.name:
+                raise OSError(28, 'Disco lleno')
+            return escribir_original(ruta, *args, **kwargs)
+
+        with patch('pathlib.Path.write_text', new=escribir):
+            with self.assertRaises(OSError):
+                importar(self.origen, self.boveda)
+        self.assertEqual(list((self.boveda / 'apuntes' / 'Importados').iterdir()), [])
+
+    def test_todos_ilegibles_no_crea_importacion_vacia(self):
+        (self.origen / 'nube.md').write_bytes(b'nube')
+        with patch('herramientas.importar_carpeta._copiar', side_effect=ErrorLecturaOrigen(22, 'No disponible')):
+            with self.assertRaisesRegex(ValueError, 'ningún archivo'):
+                importar(self.origen, self.boveda)
+        self.assertEqual(list((self.boveda / 'apuntes' / 'Importados').iterdir()), [])
 
     def test_no_sigue_enlace_o_junction_externo(self):
         exterior = self.raiz / 'fuera'

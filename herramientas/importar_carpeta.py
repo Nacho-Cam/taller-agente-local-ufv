@@ -12,6 +12,17 @@ EXCLUIDOS = {'.git', '.obsidian', '.venv', 'venv', 'node_modules', '.tools', '.l
 MAX_TEXTO = 200_000
 
 
+class ErrorLecturaOrigen(OSError):
+    """Origen no disponible; nunca representa errores de escritura del destino."""
+
+
+def _desde_origen(funcion, *args):
+    try:
+        return funcion(*args)
+    except OSError as exc:
+        raise ErrorLecturaOrigen(exc.errno, 'No se pudo leer un archivo de origen.') from exc
+
+
 def _enlace(ruta):
     datos = ruta.lstat()
     return stat.S_ISLNK(datos.st_mode) or bool(getattr(datos, 'st_file_attributes', 0) & 0x400)
@@ -72,18 +83,22 @@ def analizar(origen, boveda):
 
 
 def _copiar(origen, destino):
-    if _enlace(origen):
+    if _desde_origen(_enlace, origen):
         raise ValueError('La carpeta cambió durante la importación: apareció un enlace.')
-    antes = origen.stat()
-    descriptor = os.open(origen, os.O_RDONLY | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    antes = _desde_origen(origen.stat)
+    descriptor = _desde_origen(os.open, origen, os.O_RDONLY | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_NOFOLLOW', 0))
     with os.fdopen(descriptor, 'rb') as entrada:
-        abierto = os.fstat(entrada.fileno())
+        abierto = _desde_origen(os.fstat, entrada.fileno())
         if not stat.S_ISREG(abierto.st_mode) or (antes.st_dev, antes.st_ino) != (abierto.st_dev, abierto.st_ino):
             raise ValueError('Un archivo cambió durante la importación. Inténtalo de nuevo.')
         destino.parent.mkdir(parents=True, exist_ok=True)
         with destino.open('xb') as salida:
-            shutil.copyfileobj(entrada, salida, length=1024 * 1024)
-        despues = os.fstat(entrada.fileno())
+            while True:
+                bloque = _desde_origen(entrada.read, 1024 * 1024)
+                if not bloque:
+                    break
+                salida.write(bloque)
+        despues = _desde_origen(os.fstat, entrada.fileno())
         if (abierto.st_size, abierto.st_mtime_ns) != (despues.st_size, despues.st_mtime_ns):
             raise ValueError('Un archivo cambió durante la importación. Inténtalo de nuevo.')
     os.utime(destino, ns=(antes.st_atime_ns, antes.st_mtime_ns))
@@ -115,7 +130,8 @@ def importar(origen, boveda, progreso=None):
     """Copia atómica a apuntes/Importados/nombre-UUID; progreso recibe un str por archivo.
 
     El resultado contiene destino, conteos, PDFs sin texto, errores de extracción y resumen.
-    Los errores de lectura/copia abortan todo; los de extracción conservan el adjunto.
+    Los archivos ilegibles se omiten con aviso. Errores de escritura o seguridad
+    abortan todo; los de extracción conservan el adjunto.
     """
     plan = analizar(origen, boveda)
     if not plan['total_archivos']:
@@ -140,23 +156,40 @@ def importar(origen, boveda, progreso=None):
     nombres = {a['archivo'].split('/')[0].casefold() for a in plan['archivos']}
     while extraidos.casefold() in nombres:
         extraidos += '_'
-    errores, sin_texto, limitados = [], [], []
+    errores, sin_texto, limitados, errores_lectura = [], [], [], []
     textos_generados = 0
+    archivos_copiados = bytes_copiados = 0
     try:
         for numero, entrada in enumerate(plan['archivos'], 1):
             relativa = Path(entrada['archivo'])
             fuente = origen / relativa
-            # Revalida los padres: no seguir un directorio sustituido por un enlace.
-            for parte in [fuente, *fuente.parents]:
-                if parte == origen.parent:
-                    break
-                if _enlace(parte):
-                    raise ValueError('La carpeta cambió durante la importación: apareció un enlace.')
             copia = temporal / relativa
-            _copiar(fuente, copia)
+            try:
+                # Revalida los padres: no seguir un directorio sustituido por un enlace.
+                for parte in [fuente, *fuente.parents]:
+                    if parte == origen.parent:
+                        break
+                    if _desde_origen(_enlace, parte):
+                        raise ValueError('La carpeta cambió durante la importación: apareció un enlace.')
+                _copiar(fuente, copia)
+            except ErrorLecturaOrigen as exc:
+                # Solo esta copia parcial nos pertenece. Si no se puede borrar,
+                # es un fallo del destino y se aborta toda la importación.
+                copia.unlink(missing_ok=True)
+                errores_lectura.append({'archivo': entrada['archivo'], 'errno': exc.errno,
+                                        'motivo': 'Archivo de origen no disponible o sin permiso de lectura. Puede estar pendiente de descarga en OneDrive.'})
+                if progreso:
+                    progreso(f'Revisados {numero} de {plan["total_archivos"]} archivos; {archivos_copiados} copiados y {len(errores_lectura)} no disponibles.')
+                continue
+            archivos_copiados += 1
+            bytes_copiados += copia.stat().st_size
             if copia.suffix.lower() in ('.pdf', '.txt', '.csv'):
                 try:
                     texto, limitado = _extraer(copia)
+                except Exception as exc:
+                    errores.append({'archivo': entrada['archivo'], 'motivo': type(exc).__name__,
+                                    'resumen': 'No se pudo extraer texto; se conserva el archivo original.'})
+                else:
                     if limitado:
                         limitados.append(entrada['archivo'])
                     if not texto.strip() and copia.suffix.lower() == '.pdf':
@@ -166,11 +199,18 @@ def importar(origen, boveda, progreso=None):
                         nota.parent.mkdir(parents=True, exist_ok=True)
                         nota.write_text(f'# Texto de {relativa.name}\n\nOriginal: {entrada["archivo"]}\n\n{texto[inicio:inicio + 18000]}', encoding='utf-8')
                         textos_generados += 1
-                except Exception as exc:
-                    errores.append({'archivo': entrada['archivo'], 'motivo': type(exc).__name__,
-                                    'resumen': 'No se pudo extraer texto; se conserva el archivo original.'})
             if progreso:
-                progreso(f'Copiados {numero} de {plan["total_archivos"]} archivos.')
+                progreso(f'Revisados {numero} de {plan["total_archivos"]} archivos; {archivos_copiados} copiados y {len(errores_lectura)} no disponibles.')
+        if not archivos_copiados:
+            raise ValueError('No se ha podido leer ningún archivo. Comprueba los permisos y descarga los archivos de OneDrive antes de reintentar.')
+        manifiesto = '_importacion.json'
+        while manifiesto.casefold() in nombres:
+            manifiesto = '_' + manifiesto
+        detalles = {'archivos_escaneados': plan['total_archivos'], 'archivos_copiados': archivos_copiados,
+                    'bytes_copiados': bytes_copiados, 'errores_lectura': errores_lectura,
+                    'errores_extraccion': errores, 'pdf_sin_texto': sin_texto,
+                    'texto_limitado': limitados, 'omitidos': plan['omitidos']}
+        (temporal / manifiesto).write_text(json.dumps(detalles, ensure_ascii=False, indent=2), encoding='utf-8')
         if destino.exists():
             raise FileExistsError('El destino ya existe; no se ha sobrescrito.')
         temporal.rename(destino)
@@ -180,11 +220,14 @@ def importar(origen, boveda, progreso=None):
             raise RuntimeError('Ruta temporal inesperada; no se ha eliminado.')
         shutil.rmtree(temporal)
         raise
-    resumen = (f'Importados {plan["total_archivos"]} archivos ({plan["bytes"] / 1024**2:.1f} MB). '
+    resumen = (f'Importados {archivos_copiados} de {plan["total_archivos"]} archivos ({bytes_copiados / 1024**2:.1f} MB). '
+               f'{len(errores_lectura)} archivos no disponibles; '
                f'{textos_generados} notas de texto creadas; {len(sin_texto)} PDF sin texto; '
                f'{len(errores)} errores de extracción; {len(plan["omitidos"])} entradas omitidas. '
                'Los originales permanecen en su carpeta. No se aplica OCR; DOCX, PPTX y hojas de cálculo se conservan como adjuntos.')
     return {**plan, 'destino': str(destino), 'textos_generados': textos_generados,
+            'archivos_copiados': archivos_copiados, 'bytes_copiados': bytes_copiados,
+            'errores_lectura': errores_lectura, 'manifiesto': str(destino / manifiesto),
             'pdf_sin_texto': sin_texto, 'errores_extraccion': errores,
             'texto_limitado': limitados, 'resumen': resumen}
 
@@ -197,4 +240,4 @@ if __name__ == '__main__':
     opciones = parser.parse_args()
     resultado = (analizar(opciones.origen, opciones.boveda) if opciones.analizar else
                  importar(opciones.origen, opciones.boveda, progreso=lambda mensaje: print(mensaje, flush=True)))
-    print(json.dumps({k: resultado[k] for k in ('resumen', 'total_archivos', 'bytes', 'destino') if k in resultado}, ensure_ascii=False), flush=True)
+    print(json.dumps({k: resultado[k] for k in ('resumen', 'total_archivos', 'archivos_copiados', 'bytes', 'bytes_copiados', 'destino', 'manifiesto') if k in resultado}, ensure_ascii=False), flush=True)
