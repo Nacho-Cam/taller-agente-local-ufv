@@ -83,28 +83,23 @@ def palabras(texto):
 
 
 def archivos_md(boveda):
-    # Solo dos carpetas conocidas, sin seguir enlaces a carpetas externas.
-    # Canonicaliza los ancestros (por ejemplo /var -> /private/var en macOS)
-    # antes de comparar rutas. Los enlaces dentro de la bóveda siguen vetados.
+    # Recorre también apuntes importados manteniendo sus subcarpetas.
+    # Los enlaces internos y junctions se validan antes de entrar o leer.
     boveda = Path(boveda).resolve()
-    raiz = boveda
-    for carpeta in ("apuntes", "memoria"):
-        directorio = boveda / carpeta
-        if not directorio.is_dir() or directorio.is_symlink():
-            continue
-        for archivo in sorted(directorio.glob("*.md"))[:100]:
-            if archivo.is_symlink() or raiz not in archivo.resolve().parents:
-                continue
-            if archivo.stat().st_size <= 100_000:
-                yield archivo
-    # Cursos organizados: sin enlaces/junctions ni papelera.
     gestor = Academia(boveda)
-    cursos = gestor.ruta('cursos')
-    if cursos.is_dir():
-        cantidad = 0
-        for directorio, carpetas, archivos in os.walk(cursos, followlinks=False):
+    cantidad = total_bytes = 0
+    for carpeta in ('apuntes', 'memoria', 'cursos'):
+        try:
+            raiz = gestor.ruta(carpeta)
+        except ValueError:
+            continue
+        if not raiz.is_dir():
+            continue
+        for directorio, carpetas, archivos in os.walk(raiz, followlinks=False):
             permitidas = []
             for c in sorted(carpetas):
+                if c.startswith('.'):
+                    continue
                 try:
                     gestor.ruta((Path(directorio) / c).relative_to(boveda).as_posix())
                     permitidas.append(c)
@@ -112,14 +107,18 @@ def archivos_md(boveda):
                     continue
             carpetas[:] = permitidas
             for n in sorted(archivos):
-                if not n.endswith('.md'):
+                if not n.lower().endswith('.md') or n.startswith('.'):
                     continue
                 try:
                     p = gestor.ruta((Path(directorio) / n).relative_to(boveda).as_posix())
-                    if p.stat().st_size <= 1_250_000:
+                    tamano = p.stat().st_size
+                    if tamano <= 1_250_000:
+                        if total_bytes + tamano > 256 * 1024**2:
+                            return
                         yield p
                         cantidad += 1
-                        if cantidad >= 1000:
+                        total_bytes += tamano
+                        if cantidad >= 10000:
                             return
                 except (OSError, ValueError):
                     continue
@@ -142,7 +141,10 @@ def buscar_apuntes(consulta, boveda=BOVEDA, curso='', asignatura=''):
     for archivo in archivos_md(boveda):
         if filtro and filtro not in archivo.parents:
             continue
-        lineas = archivo.read_text(encoding="utf-8-sig").splitlines()
+        try:
+            lineas = archivo.read_text(encoding="utf-8-sig").splitlines()
+        except (OSError, UnicodeError):
+            continue
         for inicio in range(0, len(lineas), 8):
             bloque = "\n".join(lineas[inicio:inicio + 12])
             coincidencias = terminos & palabras(bloque)
@@ -153,7 +155,7 @@ def buscar_apuntes(consulta, boveda=BOVEDA, curso='', asignatura=''):
                     "texto": bloque[:1400]}))
     candidatos.sort(key=lambda elemento: -elemento[0])
     return {"resultados": [resultado for _, resultado in candidatos[:4]],
-            "metodo": "Coincidencia de palabras, sin embeddings. La búsqueda puede omitir sinónimos."}
+            "metodo": "Coincidencia de palabras, sin embeddings. La búsqueda puede omitir sinónimos. Límite: 10000 notas y 256 MB de texto; hasta 1,25 MB por nota."}
 
 
 def guardar_memoria(titulo, contenido, boveda=BOVEDA, confirmar=input):

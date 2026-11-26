@@ -88,6 +88,7 @@ class Instalador:
         self.destino = tk.StringVar(value=str(destino or ruta_predeterminada()))
         self.estado = tk.StringVar(value='Elige lo que quieres instalar en este equipo.')
         self.resumen = tk.StringVar()
+        self.origen_apuntes = tk.StringVar()
         self.opciones = {k: tk.BooleanVar(value=v) for k, v in preferencias(self.destino.get()).items()}
         self.controles = []
         ventana.title('Taller UFV · Tu agente de la uni')
@@ -155,8 +156,21 @@ class Instalador:
         ttk.Label(configuracion, text='Tus asignaturas y apuntes permanecen en esta carpeta al actualizar.', wraplength=680).grid(row=3, sticky='w', pady=(7, 0))
         ttk.Label(configuracion, textvariable=self.resumen, wraplength=680).grid(row=4, sticky='w', pady=(4, 12))
         self.gemini = ttk.Button(configuracion, text='Preparar conexión con Gemini CLI', command=lambda: self.iniciar('gemini'))
-        self.gemini.grid(row=5, sticky='w', pady=(6, 5))
-        ttk.Label(configuracion, text='Opcional: usa los apuntes y la agenda desde Gemini CLI. Requiere una cuenta admitida; Canvas sigue sin conectar.', wraplength=680).grid(row=6, sticky='w', pady=(0, 12))
+        ttk.Label(configuracion, text='Traer tus apuntes', style='Seccion.TLabel').grid(row=5, sticky='w', pady=(10, 6))
+        ttk.Label(configuracion, text='Elige una carpeta existente. Se copiará a tu bóveda conservando las subcarpetas; la original queda intacta. Puedes hacerlo ahora o después de instalar.', wraplength=680).grid(row=6, sticky='w', pady=(0, 6))
+        apuntes = ttk.Frame(configuracion)
+        apuntes.grid(row=7, sticky='ew')
+        apuntes.columnconfigure(0, weight=1)
+        origen = ttk.Entry(apuntes, textvariable=self.origen_apuntes)
+        origen.grid(row=0, column=0, sticky='ew', padx=(0, 8))
+        elegir_apuntes = ttk.Button(apuntes, text='Elegir carpeta…', command=self.elegir_apuntes)
+        elegir_apuntes.grid(row=0, column=1)
+        self.importar = ttk.Button(configuracion, text='Importar carpeta a mi bóveda', command=lambda: self.iniciar('importar'))
+        self.importar.grid(row=8, sticky='w', pady=(7, 5))
+        ttk.Label(configuracion, text='Markdown y PDF con texto quedan consultables. Otros archivos se conservan como adjuntos. No se importan ajustes de Obsidian ni se aplica OCR.', wraplength=680).grid(row=9, sticky='w', pady=(0, 10))
+        self.controles.extend([origen, elegir_apuntes, self.importar])
+        self.gemini.grid(row=10, sticky='w', pady=(6, 5))
+        ttk.Label(configuracion, text='Opcional: usa los apuntes y la agenda desde Gemini CLI. Requiere una cuenta admitida; Canvas sigue sin conectar.', wraplength=680).grid(row=11, sticky='w', pady=(0, 12))
         self.controles.append(self.gemini)
         self.enlazar_desplazamiento(configuracion)
         ttk.Separator(principal).grid(row=7, sticky='ew', pady=(10, 0))
@@ -196,6 +210,13 @@ class Instalador:
         self.ver_archivos.configure(state='normal' if (proyecto / 'boveda').is_dir() and not self.ocupado else 'disabled')
         self.gemini.configure(state='normal' if existe and (proyecto / '.local/ajustes.json').is_file()
                               and (proyecto / 'herramientas/conectar_gemini.py').is_file() and not self.ocupado else 'disabled')
+        self.importar.configure(state='normal' if existe and (proyecto / '.local/ajustes.json').is_file()
+                                and not self.ocupado else 'disabled')
+
+    def elegir_apuntes(self):
+        carpeta = filedialog.askdirectory(title='Carpeta de apuntes que quieres copiar', parent=self.ventana)
+        if carpeta:
+            self.origen_apuntes.set(carpeta)
 
     def enlazar_desplazamiento(self, widget):
         widget.bind('<MouseWheel>', lambda e: self.lienzo.yview_scroll(-int(e.delta / 120) if abs(e.delta) >= 120 else (-1 if e.delta > 0 else 1), 'units'))
@@ -246,7 +267,12 @@ class Instalador:
             return
         try:
             destino = validar_destino(self.destino.get())
-            opciones = preferencias(destino) if accion == 'gemini' else {k: v.get() for k, v in self.opciones.items()}
+            opciones = preferencias(destino) if accion in ('gemini', 'importar') else {k: v.get() for k, v in self.opciones.items()}
+            origen = self.origen_apuntes.get().strip() if accion in ('preparar', 'importar') else ''
+            if accion == 'importar' and not origen:
+                raise ValueError('Elige primero la carpeta de apuntes que quieres importar.')
+            if origen and not Path(origen).expanduser().is_dir():
+                raise ValueError('La carpeta de apuntes no existe o no está disponible en este equipo.')
             destino.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryFile(dir=destino):
                 pass
@@ -258,7 +284,7 @@ class Instalador:
         for control in self.controles:
             control.configure(state='disabled')
         self.barra.start(15)
-        threading.Thread(target=self.trabajar, args=(destino, opciones, accion), daemon=True).start()
+        threading.Thread(target=self.trabajar, args=(destino, opciones, accion, origen), daemon=True).start()
 
     def ejecutar(self, comando, proyecto):
         opciones = dict(cwd=proyecto, env=preparar_ambiente(), stdout=subprocess.PIPE,
@@ -274,7 +300,7 @@ class Instalador:
         if codigo:
             raise RuntimeError(f'La preparación terminó con código {codigo}. Revisa el detalle y pulsa Reintentar.')
 
-    def trabajar(self, destino, opciones, accion):
+    def trabajar(self, destino, opciones, accion, origen=''):
         try:
             proyecto = destino / CARPETA
             marcador = proyecto / '.ufv-paquete.json'
@@ -309,6 +335,16 @@ class Instalador:
                 self.ejecutar(comando_arranque(proyecto, 'preparar', seleccion), proyecto)
             if getattr(sys, 'frozen', False):
                 crear_accesos(destino, Path(sys.executable))
+            if origen:
+                uv = proyecto / '.tools/uv' / ('uv.exe' if sys.platform == 'win32' else 'uv')
+                self.eventos.put(('estado', 'Copiando tus apuntes y extrayendo el texto de los PDF… La carpeta original se conserva.'))
+                self.ejecutar([str(uv), 'run', '--frozen', '--directory', str(proyecto), '--python', '3.11',
+                    '--extra', 'mcp', 'python', str(proyecto / 'herramientas/importar_carpeta.py'),
+                    '--origen', str(Path(origen).expanduser()), '--boveda', str(proyecto / 'boveda')], proyecto)
+                self.eventos.put(('importado', 'Carpeta importada. Los documentos están en boveda/apuntes/Importados.'))
+            if accion == 'importar':
+                self.eventos.put(('fin', 'Importación completada. Abre tus archivos o pregunta por tus nuevos apuntes en el agente.'))
+                return
             if accion == 'gemini':
                 uv = proyecto / '.tools/uv' / ('uv.exe' if sys.platform == 'win32' else 'uv')
                 self.eventos.put(('estado', 'Preparando la biblioteca y las herramientas para Gemini CLI…'))
@@ -339,6 +375,9 @@ class Instalador:
                     self.escribir(texto)
                 elif tipo == 'estado':
                     self.estado.set(texto)
+                    self.escribir(texto)
+                elif tipo == 'importado':
+                    self.origen_apuntes.set('')
                     self.escribir(texto)
                 else:
                     self.ocupado = False

@@ -13,7 +13,8 @@ def empaquetar():
     archivos = [RAIZ / nombre for nombre in nombres if (RAIZ / nombre).is_file()]
     for carpeta in CARPETAS:
         archivos.extend(a for a in (RAIZ / carpeta).rglob("*")
-                        if a.is_file() and a.suffix in (".py", ".md") and "__pycache__" not in a.parts)
+                        if a.is_file() and a.suffix in (".py", ".md") and "__pycache__" not in a.parts
+                        and not a.is_relative_to(RAIZ / 'boveda/apuntes/Importados'))
     DESTINO.parent.mkdir(exist_ok=True)
     with ZipFile(DESTINO, "w", ZIP_DEFLATED) as paquete:
         for archivo in sorted(set(archivos)):

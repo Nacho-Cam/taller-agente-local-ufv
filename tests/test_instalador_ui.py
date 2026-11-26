@@ -52,13 +52,13 @@ class FlujoInstalador(unittest.TestCase):
             (proyecto / '.local/componentes.json').write_text(seleccion.read_text())
             (proyecto / '.local/ajustes.json').write_text('{}')
 
-    def ejecutar_flujo(self, opciones, accion, red=False):
+    def ejecutar_flujo(self, opciones, accion, red=False, origen=''):
         ejecutar = Mock(side_effect=self.backend)
         self.app.ejecutar = ejecutar
         comando = lambda proyecto, accion='iniciar', componentes=None: ['backend', accion] + ([str(componentes)] if componentes else [])
         respuesta = io.BytesIO(self.datos) if red else None
         with patch.object(ui, 'comando_arranque', side_effect=comando), patch.object(ui, 'urlopen', return_value=respuesta) as descargar, patch.object(ui, 'crear_accesos'), patch.object(ui, 'abrir_terminal') as terminal, patch.object(ui.sys, 'frozen', False, create=True):
-            self.app.trabajar(self.destino, dict(opciones), accion)
+            self.app.trabajar(self.destino, dict(opciones), accion, origen)
         eventos = []
         while not self.app.eventos.empty():
             eventos.append(self.app.eventos.get_nowait())
@@ -79,6 +79,29 @@ class FlujoInstalador(unittest.TestCase):
         descargar.assert_not_called()
         self.assertEqual([c.args[0] for c in ejecutar.call_args_list], [['backend', 'iniciar']])
         self.assertEqual(ejecutar.call_args.args[1], proyecto)
+        self.assertEqual(eventos[-1][0], 'fin', eventos)
+
+    def test_importar_en_instalacion_existente_no_recalibra_ni_abre_chat(self):
+        proyecto = self.instalado()
+        origen = Path(self.temporal.name) / 'Universidad con espacios'
+        origen.mkdir()
+        ejecutar, descargar, terminal, eventos = self.ejecutar_flujo(OPCIONES, 'importar', origen=str(origen))
+        descargar.assert_not_called()
+        terminal.assert_not_called()
+        self.assertEqual(ejecutar.call_count, 1)
+        comando = ejecutar.call_args.args[0]
+        self.assertIn(str(proyecto / 'herramientas/importar_carpeta.py'), comando)
+        self.assertEqual(comando[-4:], ['--origen', str(origen), '--boveda', str(proyecto / 'boveda')])
+        self.assertEqual([tipo for tipo, _ in eventos][-2:], ['importado', 'fin'])
+
+    def test_primera_instalacion_importa_despues_de_preparar(self):
+        origen = Path(self.temporal.name) / 'Universidad'
+        origen.mkdir()
+        ejecutar, _, terminal, eventos = self.ejecutar_flujo(OPCIONES, 'preparar', red=True, origen=str(origen))
+        self.assertEqual(ejecutar.call_count, 2)
+        self.assertEqual(ejecutar.call_args_list[0].args[0][1], 'preparar')
+        self.assertIn('--origen', ejecutar.call_args_list[1].args[0])
+        terminal.assert_not_called()
         self.assertEqual(eventos[-1][0], 'fin', eventos)
 
     def test_cambiar_componentes_prepara_una_vez_y_luego_abre_sin_repreparar(self):

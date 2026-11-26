@@ -28,6 +28,14 @@ Desde 0.7.1 hay una opción adicional **Preparar conexión con Gemini CLI**, dis
 
 ## Dónde queda la aplicación
 
+### Traer una carpeta que ya tienes
+
+En **Traer tus apuntes**, pulsa **Elegir carpeta…** y selecciona tu carpeta de universidad o una bóveda existente. En la primera instalación se importa al pulsar **Instalar selección**. Si ya tienes el taller instalado, pulsa **Importar carpeta a mi bóveda**.
+
+Se hace una copia en `boveda/apuntes/Importados`, manteniendo subcarpetas y archivos originales. La carpeta de origen no se modifica. Los ajustes y plugins de otra bóveda no se importan. Markdown y texto extraído de PDF quedan consultables sin cambiar el contenido de las notas originales; otros formatos se conservan como adjuntos. No se aplica OCR a escaneados. Los enlaces relativos entre archivos copiados se conservan; los enlaces absolutos o configurados por plugins pueden necesitar ajustes.
+
+Puedes importar más carpetas después. Cada importación crea una copia independiente; no sincroniza cambios posteriores ni sobrescribe una importación anterior. Necesitas espacio libre para esa copia y el texto extraído. La búsqueda recorre como máximo 10000 notas y 256 MB de texto por consulta, con hasta 1,25 MB por nota.
+
 Puedes cambiar la carpeta antes de instalar. Por defecto:
 
 | Sistema | Instalación y documentos | Acceso habitual |
