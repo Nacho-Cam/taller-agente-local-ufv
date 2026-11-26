@@ -6,6 +6,7 @@ import time
 import unittest
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import entorno_local
@@ -116,7 +117,11 @@ class Perfiles(unittest.TestCase):
                 with cerrojo:
                     estado['activas'] -= 1
 
-        with patch.object(entorno, 'api', side_effect=api):
+        # Esta prueba simula falta de memoria; la carga del runner no debe
+        # activar antes el criterio independiente de latencia.
+        with patch.object(entorno, 'api', side_effect=api), patch.object(
+            entorno, 'time', SimpleNamespace(monotonic=lambda: 0.0)
+        ):
             entorno.calibrar(p)
         self.assertTrue(p['calibrado'])
         self.assertEqual(p['max_agentes'], 2)
